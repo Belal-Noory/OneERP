@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: oneerp
+      POSTGRES_PASSWORD: oneerp
+      POSTGRES_DB: oneerp
+    ports:
+      - "5432:5432"
+    volumes:
+      - oneerp_pgdata:/var/lib/postgresql/data
+
+volumes:
+  oneerp_pgdata:
+

@@ -1,0 +1,48 @@
+{
+  "items": [
+    {
+      "event": {
+        "id": "evt-tenant-membership-missing-id",
+        "moduleId": "tenant",
+        "entityType": "tenant_membership",
+        "entityLocalId": "",
+        "operation": "update",
+        "payload": { "status": "active" }
+      },
+      "expect": { "ok": false, "errorKey": "errors.validationError" }
+    },
+    {
+      "event": {
+        "id": "evt-shop-product-invalid",
+        "moduleId": "shop",
+        "entityType": "shop_product",
+        "entityLocalId": "00000000-0000-0000-0000-000000000001",
+        "operation": "create",
+        "payload": { "id": "00000000-0000-0000-0000-000000000001", "name": "A", "sellPrice": "" }
+      },
+      "expect": { "ok": false, "errorKey": "errors.validationError" }
+    },
+    {
+      "event": {
+        "id": "evt-stock-transfer-bad",
+        "moduleId": "shop",
+        "entityType": "shop_stock_movement",
+        "entityLocalId": "evt-stock-transfer-bad",
+        "operation": "create",
+        "payload": { "type": "transfer", "productId": "p", "qty": "1", "fromLocationId": "L", "toLocationId": "L" }
+      },
+      "expect": { "ok": false, "errorKey": "errors.validationError" }
+    },
+    {
+      "event": {
+        "id": "evt-file-invalid-purpose",
+        "moduleId": "tenant",
+        "entityType": "file",
+        "entityLocalId": "file-id-1",
+        "operation": "create",
+        "payload": { "id": "file-id-1", "purpose": "bad", "contentType": "image/png", "originalName": "x.png", "base64": "AA==" }
+      },
+      "expect": { "ok": false, "errorKey": "errors.validationError" }
+    }
+  ]
+}

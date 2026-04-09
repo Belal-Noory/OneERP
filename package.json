@@ -1,0 +1,22 @@
+{
+  "name": "oneerp",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "apps/api",
+    "apps/app",
+    "apps/owner",
+    "apps/web",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w apps/web",
+    "dev:app": "npm run dev -w apps/app",
+    "dev:api": "npm run start:dev -w apps/api",
+    "dev:owner": "npm run dev -w apps/owner",
+    "lint": "npm run lint -ws",
+    "typecheck": "npm run typecheck -ws",
+    "build": "npm run build -ws",
+    "test": "npm run test -ws"
+  }
+}
