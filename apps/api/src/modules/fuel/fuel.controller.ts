@@ -7,7 +7,19 @@ import { PermissionsGuard } from "../../shared/permissions.guard";
 import { RequirePermissions } from "../../shared/permissions.decorator";
 import { ModuleEnabledGuard } from "../../shared/module-enabled.guard";
 import { MembershipModuleGuard } from "../../shared/membership-module.guard";
-import { CreateFuelReceivingDto, CreateNozzleDto, CreatePumpDto, CreateTankDipDto, CreateTankDto, UpdateNozzleDto, UpdatePumpDto, UpdateTankDto } from "./dto/fuel.dto";
+import {
+  CloseFuelShiftDto,
+  CreateFuelReceivingDto,
+  CreateFuelSaleDto,
+  CreateNozzleDto,
+  CreatePumpDto,
+  CreateTankDipDto,
+  CreateTankDto,
+  OpenFuelShiftDto,
+  UpdateNozzleDto,
+  UpdatePumpDto,
+  UpdateTankDto
+} from "./dto/fuel.dto";
 
 @Controller("api/fuel")
 @UseGuards(AuthGuard("jwt"), TenantGuard, ModuleEnabledGuard("fuel"), MembershipModuleGuard("fuel"), PermissionsGuard)
@@ -352,5 +364,270 @@ export class FuelController {
 
     await this.prisma.fuelNozzle.delete({ where: { id } });
     return { data: { success: true } };
+  }
+
+  // --- SHIFTS ---
+
+  @Get("shifts")
+  @RequirePermissions("fuel.shifts.view")
+  async listShifts(@Req() req: { tenantId: string }) {
+    const tenantId = req.tenantId;
+    const shifts = await this.prisma.fuelShift.findMany({
+      where: { tenantId },
+      orderBy: { openedAt: "desc" },
+      include: {
+        openedBy: { select: { id: true, fullName: true } },
+        closedBy: { select: { id: true, fullName: true } },
+        readings: {
+          include: {
+            nozzle: { select: { id: true, name: true, tank: { select: { id: true, name: true, fuelType: true } } } }
+          },
+          orderBy: { createdAt: "asc" }
+        }
+      },
+      take: 50
+    });
+
+    return {
+      data: shifts.map((s) => ({
+        ...s,
+        expectedRevenue: s.expectedRevenue.toString(),
+        actualRevenue: s.actualRevenue.toString(),
+        difference: s.difference.toString(),
+        readings: s.readings.map((r) => ({
+          ...r,
+          openingReading: r.openingReading.toString(),
+          closingReading: r.closingReading?.toString() ?? null,
+          totalVolume: r.totalVolume.toString(),
+          pricePerUnit: r.pricePerUnit.toString(),
+          totalAmount: r.totalAmount.toString()
+        }))
+      }))
+    };
+  }
+
+  @Post("shifts/open")
+  @RequirePermissions("fuel.shifts.manage")
+  async openShift(@Req() req: { tenantId: string; user: { id: string } }, @Body() body: OpenFuelShiftDto) {
+    const tenantId = req.tenantId;
+    const uniqueNozzleIds = Array.from(new Set((body.nozzles ?? []).map((n) => n.nozzleId)));
+    if (uniqueNozzleIds.length === 0) {
+      throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.invalidInput" } }, 400);
+    }
+
+    const nozzles = await this.prisma.fuelNozzle.findMany({
+      where: { tenantId, id: { in: uniqueNozzleIds }, status: "active" }
+    });
+    if (nozzles.length !== uniqueNozzleIds.length) {
+      throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.invalidInput" } }, 400);
+    }
+
+    const openShiftCount = await this.prisma.fuelShift.count({ where: { tenantId, status: "open" } });
+    if (openShiftCount > 0) {
+      throw new HttpException({ error: { code: "ALREADY_EXISTS", message_key: "errors.alreadyExists" } }, 400);
+    }
+
+    const nozzlesMap = new Map(nozzles.map((n) => [n.id, n]));
+    const byNozzle = new Map(body.nozzles.map((n) => [n.nozzleId, n]));
+
+    const shift = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.fuelShift.create({
+        data: { tenantId, status: "open", openedByUserId: req.user.id, note: body.note || null }
+      });
+
+      await tx.fuelShiftNozzleReading.createMany({
+        data: uniqueNozzleIds.map((nozzleId) => {
+          const nozzleInput = byNozzle.get(nozzleId)!;
+          const nozzle = nozzlesMap.get(nozzleId)!;
+          return {
+            tenantId,
+            shiftId: created.id,
+            nozzleId,
+            openingReading: nozzle.currentTotalizerReading,
+            pricePerUnit: new Prisma.Decimal(nozzleInput.pricePerUnit)
+          };
+        })
+      });
+
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorUserId: req.user.id,
+          action: "fuel.shift.open",
+          metadataJson: { shiftId: created.id, nozzleIds: uniqueNozzleIds }
+        }
+      });
+
+      return created;
+    });
+
+    return { data: { id: shift.id } };
+  }
+
+  @Post("shifts/:id/close")
+  @RequirePermissions("fuel.shifts.manage")
+  async closeShift(
+    @Req() req: { tenantId: string; user: { id: string } },
+    @Param("id") id: string,
+    @Body() body: CloseFuelShiftDto
+  ) {
+    const tenantId = req.tenantId;
+    const shift = await this.prisma.fuelShift.findFirst({
+      where: { tenantId, id },
+      include: { readings: true }
+    });
+    if (!shift) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
+    if (shift.status !== "open") throw new HttpException({ error: { code: "BAD_REQUEST", message_key: "errors.badRequest" } }, 400);
+
+    const closingByNozzle = new Map((body.nozzles ?? []).map((n) => [n.nozzleId, n]));
+    if (!shift.readings.every((r) => closingByNozzle.has(r.nozzleId))) {
+      throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.invalidInput" } }, 400);
+    }
+
+    let expectedRevenue = new Prisma.Decimal(0);
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const reading of shift.readings) {
+        const close = closingByNozzle.get(reading.nozzleId)!;
+        const closingReading = new Prisma.Decimal(close.closingReading);
+        if (closingReading.lessThan(reading.openingReading)) {
+          throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.invalidInput" } }, 400);
+        }
+        const totalVolume = closingReading.sub(reading.openingReading);
+        const totalAmount = totalVolume.mul(reading.pricePerUnit);
+        expectedRevenue = expectedRevenue.add(totalAmount);
+
+        await tx.fuelShiftNozzleReading.update({
+          where: { id: reading.id },
+          data: {
+            closingReading,
+            totalVolume,
+            totalAmount
+          }
+        });
+
+        await tx.fuelNozzle.update({
+          where: { id: reading.nozzleId },
+          data: { currentTotalizerReading: closingReading }
+        });
+      }
+
+      const actualRevenue = new Prisma.Decimal(body.actualRevenue);
+      const difference = actualRevenue.sub(expectedRevenue);
+      await tx.fuelShift.update({
+        where: { id: shift.id },
+        data: {
+          status: "closed",
+          closedAt: new Date(),
+          closedByUserId: req.user.id,
+          expectedRevenue,
+          actualRevenue,
+          difference,
+          note: body.note ?? shift.note
+        }
+      });
+
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorUserId: req.user.id,
+          action: "fuel.shift.close",
+          metadataJson: { shiftId: shift.id, expectedRevenue, actualRevenue, difference }
+        }
+      });
+    });
+
+    return { data: { success: true } };
+  }
+
+  // --- SALES ---
+
+  @Get("sales")
+  @RequirePermissions("fuel.sales.view")
+  async listSales(@Req() req: { tenantId: string }) {
+    const tenantId = req.tenantId;
+    const sales = await this.prisma.fuelSale.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        nozzle: { select: { id: true, name: true, tank: { select: { id: true, name: true, fuelType: true } } } },
+        shift: { select: { id: true, status: true, openedAt: true, closedAt: true } },
+        customer: { select: { id: true, name: true } }
+      },
+      take: 100
+    });
+
+    return {
+      data: sales.map((s) => ({
+        ...s,
+        volume: s.volume.toString(),
+        pricePerUnit: s.pricePerUnit.toString(),
+        totalAmount: s.totalAmount.toString()
+      }))
+    };
+  }
+
+  @Post("sales")
+  @RequirePermissions("fuel.sales.create")
+  async createSale(@Req() req: { tenantId: string; user: { id: string } }, @Body() body: CreateFuelSaleDto) {
+    const tenantId = req.tenantId;
+    const nozzle = await this.prisma.fuelNozzle.findFirst({
+      where: { tenantId, id: body.nozzleId },
+      include: { tank: true }
+    });
+    if (!nozzle) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
+
+    if (body.shiftId) {
+      const shift = await this.prisma.fuelShift.findFirst({ where: { tenantId, id: body.shiftId } });
+      if (!shift || shift.status !== "open") throw new HttpException({ error: { code: "BAD_REQUEST", message_key: "errors.badRequest" } }, 400);
+    }
+
+    if (body.customerId) {
+      const customer = await this.prisma.shopCustomer.findFirst({ where: { tenantId, id: body.customerId } });
+      if (!customer) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
+    }
+
+    const volume = new Prisma.Decimal(body.volume);
+    if (nozzle.tank.currentVolume.lessThan(volume)) {
+      throw new HttpException({ error: { code: "BAD_REQUEST", message_key: "errors.badRequest" } }, 400);
+    }
+    const pricePerUnit = new Prisma.Decimal(body.pricePerUnit);
+    const totalAmount = volume.mul(pricePerUnit);
+
+    const sale = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.fuelSale.create({
+        data: {
+          tenantId,
+          shiftId: body.shiftId || null,
+          nozzleId: body.nozzleId,
+          customerId: body.customerId || null,
+          driverName: body.driverName || null,
+          licensePlate: body.licensePlate || null,
+          volume,
+          pricePerUnit,
+          totalAmount,
+          paymentMethod: body.paymentMethod.trim(),
+          status: "posted"
+        }
+      });
+
+      await tx.fuelTank.update({
+        where: { id: nozzle.tankId },
+        data: { currentVolume: { decrement: volume } }
+      });
+
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorUserId: req.user.id,
+          action: "fuel.sale.create",
+          metadataJson: { saleId: created.id, nozzleId: body.nozzleId, shiftId: body.shiftId || null, totalAmount }
+        }
+      });
+
+      return created;
+    });
+
+    return { data: { id: sale.id } };
   }
 }
