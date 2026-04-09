@@ -134,3 +134,82 @@ export class CreateTankDipDto {
   @IsOptional()
   reason?: string;
 }
+
+export class OpenFuelShiftNozzleDto {
+  @IsString()
+  @IsNotEmpty()
+  nozzleId!: string;
+
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  pricePerUnit!: number;
+}
+
+export class OpenFuelShiftDto {
+  @IsOptional()
+  @IsString()
+  note?: string;
+
+  nozzles!: OpenFuelShiftNozzleDto[];
+}
+
+export class CloseFuelShiftNozzleDto {
+  @IsString()
+  @IsNotEmpty()
+  nozzleId!: string;
+
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  closingReading!: number;
+}
+
+export class CloseFuelShiftDto {
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  actualRevenue!: number;
+
+  @IsOptional()
+  @IsString()
+  note?: string;
+
+  nozzles!: CloseFuelShiftNozzleDto[];
+}
+
+export class CreateFuelSaleDto {
+  @IsString()
+  @IsNotEmpty()
+  nozzleId!: string;
+
+  @IsOptional()
+  @IsString()
+  shiftId?: string;
+
+  @IsNumber()
+  @Min(0.01)
+  @Type(() => Number)
+  volume!: number;
+
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  pricePerUnit!: number;
+
+  @IsString()
+  @IsNotEmpty()
+  paymentMethod!: string;
+
+  @IsOptional()
+  @IsString()
+  customerId?: string;
+
+  @IsOptional()
+  @IsString()
+  driverName?: string;
+
+  @IsOptional()
+  @IsString()
+  licensePlate?: string;
+}
