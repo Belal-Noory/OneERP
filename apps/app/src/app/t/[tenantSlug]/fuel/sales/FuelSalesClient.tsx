@@ -47,7 +47,15 @@ export function FuelSalesClient(props: { tenantSlug: string }) {
       apiFetch("/api/fuel/pumps", { headers: { "X-Tenant-Id": tenantId }, cache: "no-store" }),
       apiFetch("/api/fuel/shifts", { headers: { "X-Tenant-Id": tenantId }, cache: "no-store" })
     ]);
-    if (!salesRes.ok || !pumpsRes.ok || !shiftsRes.ok) return setErrorKey("errors.internal");
+    if (!salesRes.ok || !pumpsRes.ok || !shiftsRes.ok) {
+      try {
+        const e = !salesRes.ok ? await salesRes.json() : !pumpsRes.ok ? await pumpsRes.json() : await shiftsRes.json();
+        setErrorKey(e.error?.message_key || "errors.internal");
+      } catch {
+        setErrorKey("errors.internal");
+      }
+      return;
+    }
     const salesJson = await salesRes.json();
     const pumpsJson = await pumpsRes.json();
     const shiftsJson = await shiftsRes.json();
@@ -69,7 +77,14 @@ export function FuelSalesClient(props: { tenantSlug: string }) {
       body: JSON.stringify({ shiftId: openShiftId, nozzleId, volume: Number(volume), pricePerUnit: Number(pricePerUnit), paymentMethod })
     });
     setSaving(false);
-    if (!res.ok) return setErrorKey("errors.internal");
+    if (!res.ok) {
+      try {
+        const json = await res.json();
+        return setErrorKey(json.error?.message_key || "errors.internal");
+      } catch {
+        return setErrorKey("errors.internal");
+      }
+    }
     setModalOpen(false);
     await loadData();
   }
