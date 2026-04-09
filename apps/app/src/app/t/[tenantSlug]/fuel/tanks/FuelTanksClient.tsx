@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useClientI18n } from "@/lib/client-i18n";
 import { Modal } from "@/components/Modal";
 import { apiFetch } from "@/lib/auth-fetch";
+import Link from "next/link";
 
 const PlusIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -191,40 +192,45 @@ export function FuelTanksClient(props: { tenantSlug: string }) {
                 <th className="px-4 py-3 font-medium">{t("app.fuel.tanks.table.capacity")}</th>
                 <th className="px-4 py-3 font-medium">{t("app.fuel.tanks.table.currentVolume")}</th>
                 <th className="px-4 py-3 font-medium">{t("app.fuel.tanks.table.status")}</th>
-                {canManage && <th className="w-24 px-4 py-3 text-right font-medium">{t("app.fuel.tanks.table.actions")}</th>}
+                <th className="w-28 px-4 py-3 text-right font-medium">{t("app.fuel.tanks.table.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-gray-900">
               {tanks.length === 0 ? (
                 <tr>
-                  <td colSpan={canManage ? 6 : 5} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                     {t("app.fuel.tanks.empty")}
                   </td>
                 </tr>
               ) : (
-                tanks.map((t) => (
-                  <tr key={t.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium">{t.name}</td>
-                    <td className="px-4 py-3">{t.fuelType}</td>
-                    <td className="px-4 py-3">{t.capacity}</td>
-                    <td className="px-4 py-3">{t.currentVolume}</td>
+                tanks.map((tank) => (
+                  <tr key={tank.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 font-medium">{tank.name}</td>
+                    <td className="px-4 py-3">{tank.fuelType}</td>
+                    <td className="px-4 py-3">{tank.capacity}</td>
+                    <td className="px-4 py-3">{tank.currentVolume}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${t.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
-                        {t.status}
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tank.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
+                        {tank.status}
                       </span>
                     </td>
-                    {canManage && (
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button type="button" className="p-1.5 text-gray-400 hover:text-gray-900" onClick={() => openEdit(t)}>
-                            <PencilIcon className="h-4 w-4" />
-                          </button>
-                          <button type="button" className="p-1.5 text-gray-400 hover:text-red-600" onClick={() => deleteTank(t.id)}>
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    )}
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link href={`/t/${props.tenantSlug}/fuel/tanks/${tank.id}`} className="inline-flex h-8 items-center rounded-lg border border-gray-200 px-2 text-xs font-medium text-gray-700 hover:bg-gray-50">
+                          {t("common.button.open")}
+                        </Link>
+                        {canManage && (
+                          <>
+                            <button type="button" className="p-1.5 text-gray-400 hover:text-gray-900" onClick={() => openEdit(tank)}>
+                              <PencilIcon className="h-4 w-4" />
+                            </button>
+                            <button type="button" className="p-1.5 text-gray-400 hover:text-red-600" onClick={() => deleteTank(tank.id)}>
+                              <TrashIcon className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}

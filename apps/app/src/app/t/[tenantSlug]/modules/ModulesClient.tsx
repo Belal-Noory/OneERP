@@ -293,6 +293,7 @@ export function ModulesClient(props: { tenantSlug: string }) {
 function modulePath(tenantSlug: string, moduleId: string): string | null {
   if (moduleId === "shop") return `/t/${tenantSlug}/shop`;
   if (moduleId === "pharmacy") return `/t/${tenantSlug}/pharmacy`;
+  if (moduleId === "fuel") return `/t/${tenantSlug}/fuel`;
   return null;
 }
 
