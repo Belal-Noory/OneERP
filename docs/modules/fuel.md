@@ -46,7 +46,7 @@ All critical write actions must be logged:
 - Shift reconciliations and cash discrepancies.
 
 ## Checklist
-- [ ] Spec refinement with user
-- [ ] Database Schema (Prisma) design (Tanks, Pumps, Nozzles, Shifts, Sales)
-- [ ] Backend API implementation
-- [ ] Frontend UI (Tank Dashboard, Shift Management, POS)
+- [x] Spec refinement with user
+- [x] Database Schema (Prisma) design (Tanks, Pumps, Nozzles, Shifts, Sales)
+- [x] Backend API implementation
+- [x] Frontend UI (Tank Dashboard, Shift Management, POS)

@@ -105,8 +105,8 @@ async function seedModules() {
 
   await prisma.moduleCatalog.upsert({
     where: { id: "fuel" },
-    update: { ...base("fuel"), isActive: false, nameKey: "module.fuel.name", descriptionKey: "module.fuel.description" },
-    create: { ...base("fuel"), isActive: false, nameKey: "module.fuel.name", descriptionKey: "module.fuel.description" }
+    update: { ...base("fuel"), isActive: true, nameKey: "module.fuel.name", descriptionKey: "module.fuel.description" },
+    create: { ...base("fuel"), isActive: true, nameKey: "module.fuel.name", descriptionKey: "module.fuel.description" }
   });
 }
 
