@@ -224,12 +224,14 @@ function SidebarLink(props: { href: string; active: boolean; icon: React.ReactNo
 function moduleHref(tenantSlug: string, id: string): string | null {
   if (id === "shop") return `/t/${tenantSlug}/shop`;
   if (id === "pharmacy") return `/t/${tenantSlug}/pharmacy`;
+  if (id === "fuel") return `/t/${tenantSlug}/fuel`;
   return null;
 }
 
 function moduleIcon(id: string) {
   if (id === "shop") return <IconBag />;
   if (id === "pharmacy") return <IconPill />;
+  if (id === "fuel") return <IconFuel />;
   return <IconGrid />;
 }
 
@@ -277,6 +279,17 @@ function IconSpark() {
   return (
     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M12 2l1.5 6.5L20 10l-6.5 1.5L12 18l-1.5-6.5L4 10l6.5-1.5L12 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconFuel() {
+  return (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M7 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M9 7h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M9 11h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M18 8l2 2v7a1 1 0 0 1-2 0v-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
