@@ -113,6 +113,23 @@ export function FuelShiftsClient(props: { tenantSlug: string }) {
     await loadData();
   }
 
+  async function removeShift(id: string) {
+    if (!window.confirm("Remove this shift?")) return;
+    const res = await apiFetch(`/api/fuel/shifts/${id}`, {
+      method: "DELETE",
+      headers: { "X-Tenant-Id": tenantId! }
+    });
+    if (!res.ok) {
+      try {
+        const json = await res.json();
+        return setErrorKey(json.error?.message_key || "errors.internal");
+      } catch {
+        return setErrorKey("errors.internal");
+      }
+    }
+    await loadData();
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -131,6 +148,10 @@ export function FuelShiftsClient(props: { tenantSlug: string }) {
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
         <table className="w-full text-left text-sm">
+          <thead className="bg-gray-50 text-gray-600"><tr><th className="px-4 py-3">{t("app.fuel.shifts.table.status")}</th><th className="px-4 py-3">{t("app.fuel.shifts.table.openedAt")}</th><th className="px-4 py-3">{t("app.fuel.shifts.table.expected")}</th><th className="px-4 py-3">{t("app.fuel.shifts.table.actual")}</th><th className="px-4 py-3">{t("app.fuel.shifts.table.diff")}</th><th className="px-4 py-3">{t("app.fuel.tanks.table.actions")}</th></tr></thead>
+          <tbody className="divide-y divide-gray-100">
+            {shifts.length === 0 ? <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">{t("app.fuel.shifts.empty")}</td></tr> : shifts.map((s) => (
+              <tr key={s.id}><td className="px-4 py-3">{s.status}</td><td className="px-4 py-3">{new Date(s.openedAt).toLocaleString()}</td><td className="px-4 py-3">{s.expectedRevenue}</td><td className="px-4 py-3">{s.actualRevenue}</td><td className="px-4 py-3">{s.difference}</td><td className="px-4 py-3">{s.status === "closed" ? <button type="button" className="text-xs text-red-600 hover:text-red-700" onClick={() => void removeShift(s.id)}>{t("common.button.remove")}</button> : <span className="text-xs text-gray-400">—</span>}</td></tr>
           <thead className="bg-gray-50 text-gray-600"><tr><th className="px-4 py-3">{t("app.fuel.shifts.table.status")}</th><th className="px-4 py-3">{t("app.fuel.shifts.table.openedAt")}</th><th className="px-4 py-3">{t("app.fuel.shifts.table.expected")}</th><th className="px-4 py-3">{t("app.fuel.shifts.table.actual")}</th><th className="px-4 py-3">{t("app.fuel.shifts.table.diff")}</th></tr></thead>
           <tbody className="divide-y divide-gray-100">
             {shifts.length === 0 ? <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-500">{t("app.fuel.shifts.empty")}</td></tr> : shifts.map((s) => (

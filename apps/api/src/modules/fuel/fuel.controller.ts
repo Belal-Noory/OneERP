@@ -16,6 +16,7 @@ import {
   CreateTankDipDto,
   CreateTankDto,
   OpenFuelShiftDto,
+  UpdateFuelSaleDto,
   UpdateNozzleDto,
   UpdatePumpDto,
   UpdateTankDto
@@ -540,6 +541,31 @@ export class FuelController {
     return { data: { success: true } };
   }
 
+  @Delete("shifts/:id")
+  @RequirePermissions("fuel.shifts.manage")
+  async deleteShift(@Req() req: { tenantId: string; user: { id: string } }, @Param("id") id: string) {
+    const tenantId = req.tenantId;
+    const shift = await this.prisma.fuelShift.findFirst({ where: { tenantId, id } });
+    if (!shift) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
+    if (shift.status !== "closed") throw new HttpException({ error: { code: "BAD_REQUEST", message_key: "errors.badRequest" } }, 400);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.fuelSale.updateMany({ where: { tenantId, shiftId: id }, data: { shiftId: null } });
+      await tx.fuelShiftNozzleReading.deleteMany({ where: { tenantId, shiftId: id } });
+      await tx.fuelShift.delete({ where: { id } });
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorUserId: req.user.id,
+          action: "fuel.shift.delete",
+          metadataJson: { shiftId: id }
+        }
+      });
+    });
+
+    return { data: { success: true } };
+  }
+
   // --- SALES ---
 
   @Get("sales")
@@ -629,5 +655,117 @@ export class FuelController {
     });
 
     return { data: { id: sale.id } };
+  }
+
+  @Patch("sales/:id")
+  @RequirePermissions("fuel.sales.create")
+  async updateSale(
+    @Req() req: { tenantId: string; user: { id: string } },
+    @Param("id") id: string,
+    @Body() body: UpdateFuelSaleDto
+  ) {
+    const tenantId = req.tenantId;
+    const sale = await this.prisma.fuelSale.findFirst({
+      where: { tenantId, id },
+      include: { nozzle: true }
+    });
+    if (!sale) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
+
+    const nextNozzleId = body.nozzleId ?? sale.nozzleId;
+    const nextNozzle = await this.prisma.fuelNozzle.findFirst({
+      where: { tenantId, id: nextNozzleId },
+      include: { tank: true }
+    });
+    if (!nextNozzle) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
+
+    if (body.shiftId) {
+      const shift = await this.prisma.fuelShift.findFirst({ where: { tenantId, id: body.shiftId, status: "open" } });
+      if (!shift) throw new HttpException({ error: { code: "BAD_REQUEST", message_key: "errors.badRequest" } }, 400);
+    }
+
+    const nextVolume = new Prisma.Decimal(body.volume ?? sale.volume);
+    const nextPrice = new Prisma.Decimal(body.pricePerUnit ?? sale.pricePerUnit);
+    const nextTotal = nextVolume.mul(nextPrice);
+
+    await this.prisma.$transaction(async (tx) => {
+      const oldTankId = sale.nozzle.tankId;
+      const oldVolume = sale.volume;
+      const newTankId = nextNozzle.tankId;
+
+      if (oldTankId === newTankId) {
+        const tank = await tx.fuelTank.findFirst({ where: { tenantId, id: oldTankId } });
+        if (!tank) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
+        const available = tank.currentVolume.add(oldVolume);
+        if (available.lessThan(nextVolume)) throw new HttpException({ error: { code: "BAD_REQUEST", message_key: "errors.badRequest" } }, 400);
+      } else {
+        const newTank = await tx.fuelTank.findFirst({ where: { tenantId, id: newTankId } });
+        if (!newTank) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
+        if (newTank.currentVolume.lessThan(nextVolume)) throw new HttpException({ error: { code: "BAD_REQUEST", message_key: "errors.badRequest" } }, 400);
+      }
+
+      await tx.fuelTank.update({
+        where: { id: oldTankId },
+        data: { currentVolume: { increment: oldVolume } }
+      });
+      await tx.fuelTank.update({
+        where: { id: newTankId },
+        data: { currentVolume: { decrement: nextVolume } }
+      });
+
+      await tx.fuelSale.update({
+        where: { id: sale.id },
+        data: {
+          nozzleId: nextNozzleId,
+          shiftId: body.shiftId ?? sale.shiftId,
+          customerId: body.customerId !== undefined ? body.customerId || null : sale.customerId,
+          driverName: body.driverName !== undefined ? body.driverName || null : sale.driverName,
+          licensePlate: body.licensePlate !== undefined ? body.licensePlate || null : sale.licensePlate,
+          volume: nextVolume,
+          pricePerUnit: nextPrice,
+          totalAmount: nextTotal,
+          paymentMethod: body.paymentMethod !== undefined ? body.paymentMethod.trim() : sale.paymentMethod
+        }
+      });
+
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorUserId: req.user.id,
+          action: "fuel.sale.update",
+          metadataJson: { saleId: sale.id, oldNozzleId: sale.nozzleId, newNozzleId: nextNozzleId, nextTotal }
+        }
+      });
+    });
+
+    return { data: { success: true } };
+  }
+
+  @Delete("sales/:id")
+  @RequirePermissions("fuel.sales.create")
+  async deleteSale(@Req() req: { tenantId: string; user: { id: string } }, @Param("id") id: string) {
+    const tenantId = req.tenantId;
+    const sale = await this.prisma.fuelSale.findFirst({
+      where: { tenantId, id },
+      include: { nozzle: true }
+    });
+    if (!sale) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.fuelTank.update({
+        where: { id: sale.nozzle.tankId },
+        data: { currentVolume: { increment: sale.volume } }
+      });
+      await tx.fuelSale.delete({ where: { id: sale.id } });
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          actorUserId: req.user.id,
+          action: "fuel.sale.delete",
+          metadataJson: { saleId: sale.id, tankId: sale.nozzle.tankId, volume: sale.volume }
+        }
+      });
+    });
+
+    return { data: { success: true } };
   }
 }

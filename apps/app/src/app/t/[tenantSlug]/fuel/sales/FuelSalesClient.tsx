@@ -6,6 +6,7 @@ import { useClientI18n } from "@/lib/client-i18n";
 import { Modal } from "@/components/Modal";
 
 type MeResponse = { data: { memberships: { tenantId: string; tenantSlug: string; role: { permissions: string[] } }[] } };
+type Sale = { id: string; createdAt: string; nozzleId?: string; nozzle: { name: string }; volume: string; pricePerUnit: string; totalAmount: string; paymentMethod: string };
 type Sale = { id: string; createdAt: string; nozzle: { name: string }; volume: string; totalAmount: string; paymentMethod: string };
 type Nozzle = { id: string; name: string; tankName: string; status: string };
 
@@ -23,6 +24,7 @@ export function FuelSalesClient(props: { tenantSlug: string }) {
   const [pricePerUnit, setPricePerUnit] = useState("0");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -71,6 +73,8 @@ export function FuelSalesClient(props: { tenantSlug: string }) {
 
   async function saveSale() {
     setSaving(true);
+    const res = await apiFetch(editingId ? `/api/fuel/sales/${editingId}` : "/api/fuel/sales", {
+      method: editingId ? "PATCH" : "POST",
     const res = await apiFetch("/api/fuel/sales", {
       method: "POST",
       headers: { "X-Tenant-Id": tenantId! },
@@ -86,6 +90,25 @@ export function FuelSalesClient(props: { tenantSlug: string }) {
       }
     }
     setModalOpen(false);
+    setEditingId(null);
+    await loadData();
+  }
+
+  async function removeSale(id: string) {
+    if (!window.confirm("Remove this sale?")) return;
+    const res = await apiFetch(`/api/fuel/sales/${id}`, {
+      method: "DELETE",
+      headers: { "X-Tenant-Id": tenantId! }
+    });
+    if (!res.ok) {
+      try {
+        const json = await res.json();
+        setErrorKey(json.error?.message_key || "errors.internal");
+      } catch {
+        setErrorKey("errors.internal");
+      }
+      return;
+    }
     await loadData();
   }
 
@@ -93,6 +116,13 @@ export function FuelSalesClient(props: { tenantSlug: string }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><div className="text-lg font-semibold">{t("app.fuel.sales.title")}</div><div className="text-sm text-gray-500">{t("app.fuel.sales.subtitle")}</div></div>
+        {canCreate && <button type="button" className="h-10 rounded-xl bg-primary-600 px-4 text-sm font-medium text-white" onClick={() => { setEditingId(null); setNozzleId(nozzles[0]?.id || ""); setVolume("0"); setPricePerUnit("0"); setPaymentMethod("cash"); setModalOpen(true); }}>{t("app.fuel.sales.action.new")}</button>}
+      </div>
+      {errorKey && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{t(errorKey)}</div>}
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+        <table className="w-full text-left text-sm"><thead className="bg-gray-50 text-gray-600"><tr><th className="px-4 py-3">{t("app.fuel.sales.table.date")}</th><th className="px-4 py-3">{t("app.fuel.sales.table.nozzle")}</th><th className="px-4 py-3">{t("app.fuel.sales.table.volume")}</th><th className="px-4 py-3">{t("app.fuel.sales.table.total")}</th><th className="px-4 py-3">{t("app.fuel.sales.table.payment")}</th><th className="px-4 py-3">{t("app.fuel.tanks.table.actions")}</th></tr></thead><tbody className="divide-y divide-gray-100">{sales.length === 0 ? <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">{t("app.fuel.sales.empty")}</td></tr> : sales.map((s) => <tr key={s.id}><td className="px-4 py-3">{new Date(s.createdAt).toLocaleString()}</td><td className="px-4 py-3">{s.nozzle.name}</td><td className="px-4 py-3">{s.volume}</td><td className="px-4 py-3">{s.totalAmount}</td><td className="px-4 py-3">{s.paymentMethod}</td><td className="px-4 py-3"><div className="flex items-center gap-2"><button type="button" className="text-xs text-gray-700 hover:text-gray-900" onClick={() => { setEditingId(s.id); setNozzleId((s as { nozzleId?: string }).nozzleId || ""); setVolume(s.volume); setPricePerUnit(s.pricePerUnit); setPaymentMethod(s.paymentMethod); setModalOpen(true); }}>{t("common.button.edit")}</button><button type="button" className="text-xs text-red-600 hover:text-red-700" onClick={() => void removeSale(s.id)}>{t("common.button.remove")}</button></div></td></tr>)}</tbody></table>
+      </div>
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)}><div className="w-full max-w-md p-6"><div className="text-xl font-semibold">{editingId ? t("common.button.edit") : t("app.fuel.sales.modal.title")}</div><div className="mt-1 text-sm text-gray-500">{t("app.fuel.sales.modal.subtitle")}</div><div className="mt-4 space-y-3"><select className="h-10 w-full rounded-xl border border-gray-200 px-3 text-sm" value={nozzleId} onChange={(e) => setNozzleId(e.target.value)}><option value="">{t("desktop.select")}</option>{nozzles.map((n) => <option key={n.id} value={n.id}>{n.name} ({n.tankName})</option>)}</select><input type="number" className="h-10 w-full rounded-xl border border-gray-200 px-3 text-sm" value={volume} onChange={(e) => setVolume(e.target.value)} placeholder={t("app.fuel.sales.field.volume")} /><input type="number" className="h-10 w-full rounded-xl border border-gray-200 px-3 text-sm" value={pricePerUnit} onChange={(e) => setPricePerUnit(e.target.value)} placeholder={t("app.fuel.sales.field.price")} /><select className="h-10 w-full rounded-xl border border-gray-200 px-3 text-sm" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}><option value="cash">{t("app.fuel.sales.payment.cash")}</option><option value="card">{t("app.fuel.sales.payment.card")}</option><option value="credit">{t("app.fuel.sales.payment.credit")}</option></select></div><div className="mt-6 flex justify-end gap-2"><button type="button" className="h-10 px-4" onClick={() => setModalOpen(false)}>{t("common.button.cancel")}</button><button type="button" disabled={saving || !nozzleId} className="h-10 rounded-xl bg-primary-600 px-4 text-white disabled:opacity-50" onClick={saveSale}>{t("common.button.save")}</button></div></div></Modal>
         {canCreate && <button type="button" className="h-10 rounded-xl bg-primary-600 px-4 text-sm font-medium text-white" onClick={() => { setNozzleId(nozzles[0]?.id || ""); setModalOpen(true); }}>{t("app.fuel.sales.action.new")}</button>}
       </div>
       {errorKey && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{t(errorKey)}</div>}

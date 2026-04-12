@@ -50,3 +50,9 @@ All critical write actions must be logged:
 - [x] Database Schema (Prisma) design (Tanks, Pumps, Nozzles, Shifts, Sales)
 - [x] Backend API implementation
 - [x] Frontend UI (Tank Dashboard, Shift Management, POS)
+
+## Implementation status snapshot
+- [x] Tanks + tank detail dashboard (receivings + dip readings)
+- [x] Pumps + nozzles management
+- [x] Shift open/close + reconciliation
+- [x] Sales create/update/delete

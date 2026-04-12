@@ -213,3 +213,41 @@ export class CreateFuelSaleDto {
   @IsString()
   licensePlate?: string;
 }
+
+export class UpdateFuelSaleDto {
+  @IsOptional()
+  @IsString()
+  nozzleId?: string;
+
+  @IsOptional()
+  @IsString()
+  shiftId?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0.01)
+  @Type(() => Number)
+  volume?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  pricePerUnit?: number;
+
+  @IsOptional()
+  @IsString()
+  paymentMethod?: string;
+
+  @IsOptional()
+  @IsString()
+  customerId?: string;
+
+  @IsOptional()
+  @IsString()
+  driverName?: string;
+
+  @IsOptional()
+  @IsString()
+  licensePlate?: string;
+}
