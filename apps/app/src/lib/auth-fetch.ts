@@ -85,7 +85,12 @@ export async function apiFetch(input: string, init?: RequestInit): Promise<Respo
   if (res.status === 404 && typeof window !== "undefined" && input.startsWith("/api/")) {
     const contentType = res.headers.get("content-type") ?? "";
     if (!contentType.includes("application/json")) {
-      const fallbackBase = `http://${window.location.hostname}:4000`;
+      const protocol = window.location.protocol;
+      const host = window.location.hostname;
+      const fallbackBase =
+        protocol === "https:"
+          ? `https://api.${host.replace(/^(www|app|owner|api)\./, "")}`
+          : `http://${host}:4000`;
       const fallbackUrl = joinUrl(fallbackBase, input);
       if (fallbackUrl !== url) {
         usedBase = fallbackBase;
