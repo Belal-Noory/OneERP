@@ -712,7 +712,11 @@ export function MspHawalaClient(props: { tenantSlug: string }) {
           </div>
           <div>
             <label className="block text-xs font-medium uppercase tracking-wider text-gray-500">{t("app.msp.hawala.filter.status")}</label>
-            <select className="mt-1 h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)}>
+            <select
+              className="mt-1 h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as "all" | "open" | "paid" | "cancelled")}
+            >
               <option value="all">{t("common.filter.all")}</option>
               <option value="open">{t("app.msp.hawala.status.open")}</option>
               <option value="paid">{t("app.msp.hawala.status.paid")}</option>

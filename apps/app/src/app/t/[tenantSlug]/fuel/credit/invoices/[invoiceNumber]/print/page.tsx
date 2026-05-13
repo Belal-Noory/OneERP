@@ -1,5 +1,6 @@
 import { PrintFuelCreditInvoiceClient } from "./PrintFuelCreditInvoiceClient";
 
-export default function PrintFuelCreditInvoicePage(props: { params: { tenantSlug: string; invoiceNumber: string } }) {
-  return <PrintFuelCreditInvoiceClient tenantSlug={props.params.tenantSlug} invoiceNumber={props.params.invoiceNumber} />;
+export default async function PrintFuelCreditInvoicePage(props: { params: Promise<{ tenantSlug: string; invoiceNumber: string }> }) {
+  const params = await props.params;
+  return <PrintFuelCreditInvoiceClient tenantSlug={params.tenantSlug} invoiceNumber={params.invoiceNumber} />;
 }

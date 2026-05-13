@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, HttpException, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
+import { Decimal } from "@prisma/client/runtime/library";
 import { PrismaService } from "../../prisma/prisma.service";
 import { TenantGuard } from "../../shared/tenant.guard";
 import { PermissionsGuard } from "../../shared/permissions.guard";
@@ -70,7 +71,7 @@ export class FuelController {
       where: { tenantId },
       orderBy: { name: "asc" }
     });
-    return { data: tanks.map((t) => ({ ...t, capacity: t.capacity.toString(), currentVolume: t.currentVolume.toString() })) };
+    return { data: tanks.map((t: any) => ({ ...t, capacity: t.capacity.toString(), currentVolume: t.currentVolume.toString() })) };
   }
 
   @Get("tanks/:id")
@@ -91,13 +92,13 @@ export class FuelController {
         ...tank,
         capacity: tank.capacity.toString(),
         currentVolume: tank.currentVolume.toString(),
-        receivings: tank.receivings.map((r) => ({
+        receivings: tank.receivings.map((r: any) => ({
           ...r,
           volumeReceived: r.volumeReceived.toString(),
           pricePerUnit: r.pricePerUnit.toString(),
           totalCost: r.totalCost.toString()
         })),
-        dips: tank.dips.map((d) => ({
+        dips: tank.dips.map((d: any) => ({
           ...d,
           measuredVolume: d.measuredVolume.toString(),
           systemVolume: d.systemVolume.toString(),
@@ -121,7 +122,7 @@ export class FuelController {
         tenantId,
         name: body.name.trim(),
         fuelType: body.fuelType.trim(),
-        capacity: new Prisma.Decimal(body.capacity),
+        capacity: new Decimal(body.capacity),
         status: body.status || "active"
       }
     });
@@ -145,7 +146,7 @@ export class FuelController {
       data: {
         name: body.name ? body.name.trim() : undefined,
         fuelType: body.fuelType ? body.fuelType.trim() : undefined,
-        capacity: body.capacity !== undefined ? new Prisma.Decimal(body.capacity) : undefined,
+        capacity: body.capacity !== undefined ? new Decimal(body.capacity) : undefined,
         status: body.status
       }
     });
@@ -178,9 +179,9 @@ export class FuelController {
       if (!supplier) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
     }
 
-    const totalCost = new Prisma.Decimal(body.volumeReceived).mul(new Prisma.Decimal(body.pricePerUnit));
+    const totalCost = new Decimal(body.volumeReceived).mul(new Decimal(body.pricePerUnit));
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.fuelReceiving.create({
         data: {
           tenantId,
@@ -218,10 +219,10 @@ export class FuelController {
     const tank = await this.prisma.fuelTank.findFirst({ where: { tenantId, id } });
     if (!tank) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
 
-    const measured = new Prisma.Decimal(body.measuredVolume);
+    const measured = new Decimal(body.measuredVolume);
     const diff = measured.sub(tank.currentVolume);
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.fuelTankDip.create({
         data: {
           tenantId,
@@ -270,13 +271,13 @@ export class FuelController {
     });
 
     return {
-      data: pumps.map((p) => ({
+      data: pumps.map((p: any) => ({
         id: p.id,
         name: p.name,
         status: p.status,
         createdAt: p.createdAt,
         updatedAt: p.updatedAt,
-        nozzles: p.nozzles.map((n) => ({
+        nozzles: p.nozzles.map((n: any) => ({
           id: n.id,
           name: n.name,
           tankId: n.tankId,
@@ -353,7 +354,7 @@ export class FuelController {
         pumpId: body.pumpId,
         tankId: body.tankId,
         name: body.name.trim(),
-        currentTotalizerReading: new Prisma.Decimal(body.currentTotalizerReading ?? 0),
+        currentTotalizerReading: new Decimal(body.currentTotalizerReading ?? 0),
         status: body.status || "active"
       }
     });
@@ -382,7 +383,7 @@ export class FuelController {
       data: {
         name: body.name ? body.name.trim() : undefined,
         tankId: body.tankId,
-        currentTotalizerReading: body.currentTotalizerReading !== undefined ? new Prisma.Decimal(body.currentTotalizerReading) : undefined,
+        currentTotalizerReading: body.currentTotalizerReading !== undefined ? new Decimal(body.currentTotalizerReading) : undefined,
         status: body.status
       }
     });
@@ -423,12 +424,12 @@ export class FuelController {
     });
 
     return {
-      data: shifts.map((s) => ({
+      data: shifts.map((s: any) => ({
         ...s,
         expectedRevenue: s.expectedRevenue.toString(),
         actualRevenue: s.actualRevenue.toString(),
         difference: s.difference.toString(),
-        readings: s.readings.map((r) => ({
+        readings: s.readings.map((r: any) => ({
           ...r,
           nozzle: { ...r.nozzle, currentTotalizerReading: r.nozzle.currentTotalizerReading.toString() },
           openingReading: r.openingReading.toString(),
@@ -493,18 +494,18 @@ export class FuelController {
       })
     ]);
 
-    const nozzleIds = byNozzle.map((r) => r.nozzleId);
+    const nozzleIds = byNozzle.map((r: any) => r.nozzleId);
     const nozzleRefs = nozzleIds.length
       ? await this.prisma.fuelNozzle.findMany({
           where: { tenantId, id: { in: nozzleIds } },
           select: { id: true, name: true, tank: { select: { id: true, name: true, fuelType: true } } }
         })
       : [];
-    const nozzleMap = new Map(nozzleRefs.map((n) => [n.id, n]));
+    const nozzleMap = new Map<string, any>(nozzleRefs.map((n: any) => [n.id, n]));
 
     const totals = sales.reduce(
-      (acc, s) => ({ volume: acc.volume.add(s.volume), totalAmount: acc.totalAmount.add(s.totalAmount) }),
-      { volume: new Prisma.Decimal(0), totalAmount: new Prisma.Decimal(0) }
+      (acc: { volume: Decimal; totalAmount: Decimal }, s: any) => ({ volume: acc.volume.add(s.volume), totalAmount: acc.totalAmount.add(s.totalAmount) }),
+      { volume: new Decimal(0), totalAmount: new Decimal(0) }
     );
 
     return {
@@ -522,13 +523,13 @@ export class FuelController {
           note: shift.note
         },
         totals: { salesCount: sales.length, volume: totals.volume.toString(), totalAmount: totals.totalAmount.toString() },
-        byPaymentMethod: byPayment.map((p) => ({
+        byPaymentMethod: byPayment.map((p: any) => ({
           paymentMethod: p.paymentMethod,
           salesCount: p._count._all,
-          volume: (p._sum.volume ?? new Prisma.Decimal(0)).toString(),
-          totalAmount: (p._sum.totalAmount ?? new Prisma.Decimal(0)).toString()
+          volume: (p._sum.volume ?? new Decimal(0)).toString(),
+          totalAmount: (p._sum.totalAmount ?? new Decimal(0)).toString()
         })),
-        byNozzle: byNozzle.map((r) => {
+        byNozzle: byNozzle.map((r: any) => {
           const ref = nozzleMap.get(r.nozzleId);
           return {
             nozzleId: r.nozzleId,
@@ -536,11 +537,11 @@ export class FuelController {
             tankName: ref?.tank?.name ?? null,
             fuelType: ref?.tank?.fuelType ?? null,
             salesCount: r._count._all,
-            volume: (r._sum.volume ?? new Prisma.Decimal(0)).toString(),
-            totalAmount: (r._sum.totalAmount ?? new Prisma.Decimal(0)).toString()
+            volume: (r._sum.volume ?? new Decimal(0)).toString(),
+            totalAmount: (r._sum.totalAmount ?? new Decimal(0)).toString()
           };
         }),
-        readings: shift.readings.map((r) => ({
+        readings: shift.readings.map((r: any) => ({
           id: r.id,
           nozzleId: r.nozzleId,
           nozzle: r.nozzle,
@@ -550,7 +551,7 @@ export class FuelController {
           pricePerUnit: r.pricePerUnit.toString(),
           totalAmount: r.totalAmount.toString()
         })),
-        sales: sales.map((s) => ({
+        sales: sales.map((s: any) => ({
           ...s,
           volume: s.volume.toString(),
           pricePerUnit: s.pricePerUnit.toString(),
@@ -581,10 +582,10 @@ export class FuelController {
       throw new HttpException({ error: { code: "CONFLICT", message_key: "errors.conflict" } }, 409);
     }
 
-    const nozzlesMap = new Map(nozzles.map((n) => [n.id, n]));
-    const byNozzle = new Map(body.nozzles.map((n) => [n.nozzleId, n]));
+    const nozzlesMap = new Map<string, any>(nozzles.map((n: any) => [n.id, n]));
+    const byNozzle = new Map<string, any>(body.nozzles.map((n: any) => [n.nozzleId, n]));
 
-    const shift = await this.prisma.$transaction(async (tx) => {
+    const shift = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const created = await tx.fuelShift.create({
         data: { tenantId, status: "open", openedByUserId: req.user.id, note: body.note || null }
       });
@@ -598,7 +599,7 @@ export class FuelController {
             shiftId: created.id,
             nozzleId,
             openingReading: nozzle.currentTotalizerReading,
-            pricePerUnit: new Prisma.Decimal(nozzleInput.pricePerUnit)
+            pricePerUnit: new Decimal(nozzleInput.pricePerUnit)
           };
         })
       });
@@ -633,17 +634,18 @@ export class FuelController {
     if (!shift) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
     if (shift.status !== "open") throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.validationError" } }, 400);
 
-    const closingByNozzle = new Map((body.nozzles ?? []).map((n) => [n.nozzleId, n]));
+    type CloseNozzleInput = { nozzleId: string; closingReading: number | string };
+    const closingByNozzle = new Map<string, CloseNozzleInput>((body.nozzles ?? []).map((n) => [n.nozzleId, n]));
     if (!shift.readings.every((r) => closingByNozzle.has(r.nozzleId))) {
       throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.validationError" } }, 400);
     }
 
-    let expectedRevenue = new Prisma.Decimal(0);
+    let expectedRevenue = new Decimal(0);
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       for (const reading of shift.readings) {
         const close = closingByNozzle.get(reading.nozzleId)!;
-        const closingReading = new Prisma.Decimal(close.closingReading);
+        const closingReading = new Decimal(close.closingReading);
         if (closingReading.lessThan(reading.openingReading)) {
           throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.validationError" } }, 400);
         }
@@ -666,7 +668,7 @@ export class FuelController {
         });
       }
 
-      const actualRevenue = new Prisma.Decimal(body.actualRevenue);
+      const actualRevenue = new Decimal(body.actualRevenue);
       const difference = actualRevenue.sub(expectedRevenue);
       await tx.fuelShift.update({
         where: { id: shift.id },
@@ -702,7 +704,7 @@ export class FuelController {
     if (!shift) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
     if (shift.status !== "closed") throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.validationError" } }, 400);
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.fuelSale.updateMany({ where: { tenantId, shiftId: id }, data: { shiftId: null } });
       await tx.fuelShiftNozzleReading.deleteMany({ where: { tenantId, shiftId: id } });
       await tx.fuelShift.delete({ where: { id } });
@@ -752,11 +754,11 @@ export class FuelController {
         create: {
           tenantId,
           fuelType: body.fuelType,
-          pricePerUnit: new Prisma.Decimal(body.pricePerUnit),
+          pricePerUnit: new Decimal(body.pricePerUnit),
           updatedByUserId: req.user.id
         },
         update: {
-          pricePerUnit: new Prisma.Decimal(body.pricePerUnit),
+          pricePerUnit: new Decimal(body.pricePerUnit),
           updatedByUserId: req.user.id
         }
       });
@@ -769,11 +771,11 @@ export class FuelController {
           create: {
             tenantId,
             fuelType: body.fuelType,
-            pricePerUnit: new Prisma.Decimal(body.pricePerUnit),
+            pricePerUnit: new Decimal(body.pricePerUnit),
             updatedByUserId: req.user.id
           },
           update: {
-            pricePerUnit: new Prisma.Decimal(body.pricePerUnit),
+            pricePerUnit: new Decimal(body.pricePerUnit),
             updatedByUserId: req.user.id
           }
         });
@@ -866,8 +868,8 @@ export class FuelController {
       })
     ]);
 
-    const totalSales = aggregates._sum.totalAmount ?? new Prisma.Decimal(0);
-    const totalVolume = aggregates._sum.volume ?? new Prisma.Decimal(0);
+    const totalSales = aggregates._sum.totalAmount ?? new Decimal(0);
+    const totalVolume = aggregates._sum.volume ?? new Decimal(0);
 
     return {
       data: {
@@ -923,8 +925,8 @@ export class FuelController {
             customerName: c?.name ?? customerId,
             customerPhone: c?.phone ?? null,
             salesCount: g._count._all,
-            totalVolume: (g._sum.volume ?? new Prisma.Decimal(0)).toString(),
-            totalAmount: (g._sum.totalAmount ?? new Prisma.Decimal(0)).toString(),
+            totalVolume: (g._sum.volume ?? new Decimal(0)).toString(),
+            totalAmount: (g._sum.totalAmount ?? new Decimal(0)).toString(),
             lastSaleAt: g._max.createdAt
           };
         })
@@ -1006,8 +1008,8 @@ export class FuelController {
         },
         totals: {
           salesCount: aggregates._count._all,
-          totalVolume: (aggregates._sum.volume ?? new Prisma.Decimal(0)).toString(),
-          totalAmount: (aggregates._sum.totalAmount ?? new Prisma.Decimal(0)).toString()
+          totalVolume: (aggregates._sum.volume ?? new Decimal(0)).toString(),
+          totalAmount: (aggregates._sum.totalAmount ?? new Decimal(0)).toString()
         },
         byNozzle: byNozzle.map((r) => {
           const ref = nozzleMap.get(r.nozzleId);
@@ -1017,8 +1019,8 @@ export class FuelController {
             tankName: ref?.tank?.name ?? null,
             fuelType: ref?.tank?.fuelType ?? null,
             salesCount: r._count._all,
-            totalVolume: (r._sum.volume ?? new Prisma.Decimal(0)).toString(),
-            totalAmount: (r._sum.totalAmount ?? new Prisma.Decimal(0)).toString()
+            totalVolume: (r._sum.volume ?? new Decimal(0)).toString(),
+            totalAmount: (r._sum.totalAmount ?? new Decimal(0)).toString()
           };
         }),
         sales: sales.map((s) => ({
@@ -1059,14 +1061,14 @@ export class FuelController {
         periodFrom: Date | null;
         periodTo: Date | null;
         salesCount: number;
-        totalVolume: Prisma.Decimal;
-        totalAmount: Prisma.Decimal;
+        totalVolume: Decimal;
+        totalAmount: Decimal;
         status: string;
         createdAt: Date;
         customerId: string;
         customerName: string;
         customerPhone: string | null;
-        paidAmount: Prisma.Decimal | null;
+        paidAmount: Decimal | null;
       }>
     >`
       SELECT
@@ -1107,19 +1109,19 @@ export class FuelController {
       periodFrom: Date | null;
       periodTo: Date | null;
       salesCount: number;
-      totalVolume: Prisma.Decimal;
-      totalAmount: Prisma.Decimal;
+      totalVolume: Decimal;
+      totalAmount: Decimal;
       status: string;
       createdAt: Date;
       customerId: string;
       customerName: string;
       customerPhone: string | null;
-      paidAmount: Prisma.Decimal;
+      paidAmount: Decimal;
     }>;
 
     return {
       data: invoices.map((i) => {
-        const paid = i.paidAmount ?? new Prisma.Decimal(0);
+        const paid = i.paidAmount ?? new Decimal(0);
         const balance = i.totalAmount.sub(paid);
         return {
           invoiceNumber: i.invoiceNumber,
@@ -1159,8 +1161,8 @@ export class FuelController {
         customerId: string;
         customerName: string;
         customerPhone: string | null;
-        totalAmount: Prisma.Decimal;
-        paidAmount: Prisma.Decimal;
+        totalAmount: Decimal;
+        paidAmount: Decimal;
       }>
     >`
       SELECT
@@ -1192,8 +1194,8 @@ export class FuelController {
       customerId: string;
       customerName: string;
       customerPhone: string | null;
-      totalAmount: Prisma.Decimal;
-      paidAmount: Prisma.Decimal;
+      totalAmount: Decimal;
+      paidAmount: Decimal;
     }>;
 
     const byCustomer = new Map<
@@ -1203,16 +1205,16 @@ export class FuelController {
         customerName: string;
         customerPhone: string | null;
         invoicesCount: number;
-        totalBalance: Prisma.Decimal;
-        bucket0_30: Prisma.Decimal;
-        bucket31_60: Prisma.Decimal;
-        bucket61_90: Prisma.Decimal;
-        bucket90p: Prisma.Decimal;
+        totalBalance: Decimal;
+        bucket0_30: Decimal;
+        bucket31_60: Decimal;
+        bucket61_90: Decimal;
+        bucket90p: Decimal;
       }
     >();
 
     for (const r of rows) {
-      const paid = r.paidAmount ?? new Prisma.Decimal(0);
+      const paid = r.paidAmount ?? new Decimal(0);
       const balance = r.totalAmount.sub(paid);
       if (balance.lessThanOrEqualTo(0)) continue;
 
@@ -1227,21 +1229,21 @@ export class FuelController {
           customerName: r.customerName,
           customerPhone: r.customerPhone,
           invoicesCount: 0,
-          totalBalance: new Prisma.Decimal(0),
-          bucket0_30: new Prisma.Decimal(0),
-          bucket31_60: new Prisma.Decimal(0),
-          bucket61_90: new Prisma.Decimal(0),
-          bucket90p: new Prisma.Decimal(0)
+          totalBalance: new Decimal(0),
+          bucket0_30: new Decimal(0),
+          bucket31_60: new Decimal(0),
+          bucket61_90: new Decimal(0),
+          bucket90p: new Decimal(0)
         } as {
           customerId: string;
           customerName: string;
           customerPhone: string | null;
           invoicesCount: number;
-          totalBalance: Prisma.Decimal;
-          bucket0_30: Prisma.Decimal;
-          bucket31_60: Prisma.Decimal;
-          bucket61_90: Prisma.Decimal;
-          bucket90p: Prisma.Decimal;
+          totalBalance: Decimal;
+          bucket0_30: Decimal;
+          bucket31_60: Decimal;
+          bucket61_90: Decimal;
+          bucket90p: Decimal;
         });
 
       existing.invoicesCount += 1;
@@ -1270,11 +1272,11 @@ export class FuelController {
       {
         customersCount: 0,
         invoicesCount: 0,
-        totalBalance: new Prisma.Decimal(0),
-        bucket0_30: new Prisma.Decimal(0),
-        bucket31_60: new Prisma.Decimal(0),
-        bucket61_90: new Prisma.Decimal(0),
-        bucket90p: new Prisma.Decimal(0)
+        totalBalance: new Decimal(0),
+        bucket0_30: new Decimal(0),
+        bucket31_60: new Decimal(0),
+        bucket61_90: new Decimal(0),
+        bucket90p: new Decimal(0)
       }
     );
 
@@ -1339,8 +1341,8 @@ export class FuelController {
         month: string | null;
         periodFrom: Date | null;
         periodTo: Date | null;
-        totalAmount: Prisma.Decimal;
-        paidAmount: Prisma.Decimal;
+        totalAmount: Decimal;
+        paidAmount: Decimal;
       }>
     >`
       SELECT
@@ -1371,12 +1373,12 @@ export class FuelController {
       month: string | null;
       periodFrom: Date | null;
       periodTo: Date | null;
-      totalAmount: Prisma.Decimal;
-      paidAmount: Prisma.Decimal;
+      totalAmount: Decimal;
+      paidAmount: Decimal;
     }>;
 
     const payments = (await this.prisma.$queryRaw<
-      Array<{ id: string; invoiceNumber: string; amount: Prisma.Decimal; method: string; note: string | null; receivedAt: Date }>
+      Array<{ id: string; invoiceNumber: string; amount: Decimal; method: string; note: string | null; receivedAt: Date }>
     >`
       SELECT p."id", p."invoiceNumber", p."amount", p."method", p."note", p."receivedAt"
       FROM "FuelCreditInvoicePayment" p
@@ -1388,15 +1390,15 @@ export class FuelController {
       AND (${toDate ?? null}::timestamp IS NULL OR p."receivedAt" <= ${toDate ?? null})
       ORDER BY p."receivedAt" ASC
       LIMIT 5000
-    `) as unknown as Array<{ id: string; invoiceNumber: string; amount: Prisma.Decimal; method: string; note: string | null; receivedAt: Date }>;
+    `) as unknown as Array<{ id: string; invoiceNumber: string; amount: Decimal; method: string; note: string | null; receivedAt: Date }>;
 
-    const totalInvoiced = invoices.reduce((acc, i) => acc.add(i.totalAmount), new Prisma.Decimal(0));
-    const totalPaid = payments.reduce((acc, p) => acc.add(p.amount), new Prisma.Decimal(0));
+    const totalInvoiced = invoices.reduce((acc, i) => acc.add(i.totalAmount), new Decimal(0));
+    const totalPaid = payments.reduce((acc, p) => acc.add(p.amount), new Decimal(0));
     const balance = totalInvoiced.sub(totalPaid);
 
     const events: Array<
-      | { type: "invoice"; at: Date; invoiceNumber: string; amount: Prisma.Decimal; status: string }
-      | { type: "payment"; at: Date; paymentId: string; invoiceNumber: string; amount: Prisma.Decimal; method: string; note: string | null }
+      | { type: "invoice"; at: Date; invoiceNumber: string; amount: Decimal; status: string }
+      | { type: "payment"; at: Date; paymentId: string; invoiceNumber: string; amount: Decimal; method: string; note: string | null }
     > = [];
     for (const i of invoices) {
       events.push({ type: "invoice", at: i.createdAt, invoiceNumber: i.invoiceNumber, amount: i.totalAmount, status: i.status });
@@ -1414,7 +1416,7 @@ export class FuelController {
     }
     events.sort((a, b) => a.at.getTime() - b.at.getTime());
 
-    let running = new Prisma.Decimal(0);
+    let running = new Decimal(0);
     const timeline = events.map((e) => {
       if (e.type === "invoice") running = running.add(e.amount);
       else running = running.sub(e.amount);
@@ -1453,7 +1455,7 @@ export class FuelController {
           balance: balance.lessThan(0) ? "0.00" : balance.toString()
         },
         invoices: invoices.map((i) => {
-          const paid = i.paidAmount ?? new Prisma.Decimal(0);
+        const paid = i.paidAmount ?? new Decimal(0);
           const invBal = i.totalAmount.sub(paid);
           return {
             invoiceNumber: i.invoiceNumber,
@@ -1486,8 +1488,8 @@ export class FuelController {
         periodFrom: Date | null;
         periodTo: Date | null;
         salesCount: number;
-        totalVolume: Prisma.Decimal;
-        totalAmount: Prisma.Decimal;
+        totalVolume: Decimal;
+        totalAmount: Decimal;
         status: string;
         createdAt: Date;
         customerId: string;
@@ -1518,8 +1520,8 @@ export class FuelController {
       periodFrom: Date | null;
       periodTo: Date | null;
       salesCount: number;
-      totalVolume: Prisma.Decimal;
-      totalAmount: Prisma.Decimal;
+      totalVolume: Decimal;
+      totalAmount: Decimal;
       status: string;
       createdAt: Date;
       customerId: string;
@@ -1529,14 +1531,14 @@ export class FuelController {
     if (!inv[0]) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
 
     const payments = (await this.prisma.$queryRaw<
-      Array<{ id: string; amount: Prisma.Decimal; method: string; note: string | null; receivedAt: Date; createdAt: Date }>
+      Array<{ id: string; amount: Decimal; method: string; note: string | null; receivedAt: Date; createdAt: Date }>
     >`
       SELECT "id", "amount", "method", "note", "receivedAt", "createdAt"
       FROM "FuelCreditInvoicePayment"
       WHERE "tenantId" = ${tenantId} AND "invoiceNumber" = ${invoiceNumber}
       ORDER BY "receivedAt" ASC
       LIMIT 500
-    `) as unknown as Array<{ id: string; amount: Prisma.Decimal; method: string; note: string | null; receivedAt: Date; createdAt: Date }>;
+    `) as unknown as Array<{ id: string; amount: Decimal; method: string; note: string | null; receivedAt: Date; createdAt: Date }>;
 
     const sales = await this.prisma.fuelSale.findMany({
       where: { tenantId, invoiceNumber, paymentMethod: "credit", status: "posted" },
@@ -1555,7 +1557,7 @@ export class FuelController {
       }
     });
 
-    const paidAmount = payments.reduce((acc, p) => acc.add(p.amount), new Prisma.Decimal(0));
+    const paidAmount = payments.reduce((acc, p) => acc.add(p.amount), new Decimal(0));
     const balance = inv[0].totalAmount.sub(paidAmount);
 
     return {
@@ -1591,18 +1593,18 @@ export class FuelController {
     const tenantId = req.tenantId;
     await this.ensureFuelCreditInvoiceTables();
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const invRows = (await tx.$queryRaw<Array<{ status: string }>>`
         SELECT "status" FROM "FuelCreditInvoice" WHERE "tenantId" = ${tenantId} AND "invoiceNumber" = ${invoiceNumber} LIMIT 1
       `) as unknown as Array<{ status: string }>;
       if (!invRows[0]) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
       if (invRows[0].status === "void") return;
 
-      const paidRows = (await tx.$queryRaw<Array<{ paid: Prisma.Decimal | null }>>`
+      const paidRows = (await tx.$queryRaw<Array<{ paid: Decimal | null }>>`
         SELECT SUM("amount") AS "paid" FROM "FuelCreditInvoicePayment"
         WHERE "tenantId" = ${tenantId} AND "invoiceNumber" = ${invoiceNumber}
-      `) as unknown as Array<{ paid: Prisma.Decimal | null }>;
-      const paid = paidRows[0]?.paid ?? new Prisma.Decimal(0);
+      `) as unknown as Array<{ paid: Decimal | null }>;
+      const paid = paidRows[0]?.paid ?? new Decimal(0);
       if (paid.greaterThan(0)) {
         throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.invoiceHasPayments" } }, 400);
       }
@@ -1632,18 +1634,18 @@ export class FuelController {
     const tenantId = req.tenantId;
     await this.ensureFuelCreditInvoiceTables();
 
-    await this.prisma.$transaction(async (tx) => {
-      const invRows = (await tx.$queryRaw<Array<{ status: string; totalAmount: Prisma.Decimal }>>`
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const invRows = (await tx.$queryRaw<Array<{ status: string; totalAmount: Decimal }>>`
         SELECT "status","totalAmount" FROM "FuelCreditInvoice" WHERE "tenantId" = ${tenantId} AND "invoiceNumber" = ${invoiceNumber} LIMIT 1
-      `) as unknown as Array<{ status: string; totalAmount: Prisma.Decimal }>;
+      `) as unknown as Array<{ status: string; totalAmount: Decimal }>;
       if (!invRows[0]) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
       if (invRows[0].status !== "void") return;
 
-      const paidRows = (await tx.$queryRaw<Array<{ paid: Prisma.Decimal | null }>>`
+      const paidRows = (await tx.$queryRaw<Array<{ paid: Decimal | null }>>`
         SELECT SUM("amount") AS "paid" FROM "FuelCreditInvoicePayment"
         WHERE "tenantId" = ${tenantId} AND "invoiceNumber" = ${invoiceNumber}
-      `) as unknown as Array<{ paid: Prisma.Decimal | null }>;
-      const paid = paidRows[0]?.paid ?? new Prisma.Decimal(0);
+      `) as unknown as Array<{ paid: Decimal | null }>;
+      const paid = paidRows[0]?.paid ?? new Decimal(0);
       const statusValue = paid.greaterThanOrEqualTo(invRows[0].totalAmount) ? "paid" : "issued";
 
       await tx.$executeRaw`
@@ -1675,7 +1677,7 @@ export class FuelController {
     const tenantId = req.tenantId;
     await this.ensureFuelCreditInvoiceTables();
 
-    const amount = new Prisma.Decimal(body.amount);
+    const amount = new Decimal(body.amount);
     if (amount.lessThanOrEqualTo(0)) throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.validationError" } }, 400);
     const method = (body.method ?? "").trim();
     if (!method) throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.validationError" } }, 400);
@@ -1683,11 +1685,11 @@ export class FuelController {
     const receivedAt = body.receivedAt?.trim() ? new Date(body.receivedAt) : new Date();
     const note = body.note?.trim() ? body.note.trim() : null;
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const invoiceRows = (await tx.$queryRaw<
-        Array<{ totalAmount: Prisma.Decimal; status: string }>
+        Array<{ totalAmount: Decimal; status: string }>
       >`SELECT "totalAmount","status" FROM "FuelCreditInvoice" WHERE "tenantId" = ${tenantId} AND "invoiceNumber" = ${invoiceNumber} LIMIT 1`) as unknown as Array<{
-        totalAmount: Prisma.Decimal;
+        totalAmount: Decimal;
         status: string;
       }>;
       if (!invoiceRows[0]) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
@@ -1695,11 +1697,11 @@ export class FuelController {
         throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.invoiceVoided" } }, 400);
       }
 
-      const paidBeforeRows = (await tx.$queryRaw<Array<{ paid: Prisma.Decimal | null }>>`
+      const paidBeforeRows = (await tx.$queryRaw<Array<{ paid: Decimal | null }>>`
         SELECT SUM("amount") AS "paid" FROM "FuelCreditInvoicePayment"
         WHERE "tenantId" = ${tenantId} AND "invoiceNumber" = ${invoiceNumber}
-      `) as unknown as Array<{ paid: Prisma.Decimal | null }>;
-      const paidBefore = paidBeforeRows[0]?.paid ?? new Prisma.Decimal(0);
+      `) as unknown as Array<{ paid: Decimal | null }>;
+      const paidBefore = paidBeforeRows[0]?.paid ?? new Decimal(0);
       const remaining = invoiceRows[0].totalAmount.sub(paidBefore);
       if (amount.greaterThan(remaining)) {
         throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.paymentExceedsBalance" } }, 400);
@@ -1710,11 +1712,11 @@ export class FuelController {
         VALUES (${tenantId}, ${invoiceNumber}, ${amount}, ${method}, ${note}, ${receivedAt}, ${req.user.id})
       `;
 
-      const paidRows = (await tx.$queryRaw<Array<{ paid: Prisma.Decimal | null }>>`
+      const paidRows = (await tx.$queryRaw<Array<{ paid: Decimal | null }>>`
         SELECT SUM("amount") AS "paid" FROM "FuelCreditInvoicePayment"
         WHERE "tenantId" = ${tenantId} AND "invoiceNumber" = ${invoiceNumber}
-      `) as unknown as Array<{ paid: Prisma.Decimal | null }>;
-      const paid = paidRows[0]?.paid ?? new Prisma.Decimal(0);
+      `) as unknown as Array<{ paid: Decimal | null }>;
+      const paid = paidRows[0]?.paid ?? new Decimal(0);
       const status = paid.greaterThanOrEqualTo(invoiceRows[0].totalAmount) ? "paid" : "issued";
       await tx.$executeRaw`
         UPDATE "FuelCreditInvoice"
@@ -1755,26 +1757,26 @@ export class FuelController {
     const receivedAtInput =
       body.receivedAt === undefined ? undefined : body.receivedAt?.trim() ? new Date(body.receivedAt) : undefined;
 
-    const amountInput = body.amount === undefined ? undefined : new Prisma.Decimal(body.amount);
+    const amountInput = body.amount === undefined ? undefined : new Decimal(body.amount);
     if (amountInput !== undefined && amountInput.lessThanOrEqualTo(0)) {
       throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.validationError" } }, 400);
     }
 
-    await this.prisma.$transaction(async (tx) => {
-      const invoiceRows = (await tx.$queryRaw<Array<{ totalAmount: Prisma.Decimal; status: string }>>`
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const invoiceRows = (await tx.$queryRaw<Array<{ totalAmount: Decimal; status: string }>>`
         SELECT "totalAmount","status" FROM "FuelCreditInvoice" WHERE "tenantId" = ${tenantId} AND "invoiceNumber" = ${invoiceNumber} LIMIT 1
-      `) as unknown as Array<{ totalAmount: Prisma.Decimal; status: string }>;
+      `) as unknown as Array<{ totalAmount: Decimal; status: string }>;
       if (!invoiceRows[0]) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
       if (invoiceRows[0].status === "void") {
         throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.invoiceVoided" } }, 400);
       }
 
-      const paymentRows = (await tx.$queryRaw<Array<{ amount: Prisma.Decimal; method: string; note: string | null; receivedAt: Date }>>`
+      const paymentRows = (await tx.$queryRaw<Array<{ amount: Decimal; method: string; note: string | null; receivedAt: Date }>>`
         SELECT "amount","method","note","receivedAt"
         FROM "FuelCreditInvoicePayment"
         WHERE "tenantId" = ${tenantId} AND "invoiceNumber" = ${invoiceNumber} AND "id" = ${paymentId}
         LIMIT 1
-      `) as unknown as Array<{ amount: Prisma.Decimal; method: string; note: string | null; receivedAt: Date }>;
+      `) as unknown as Array<{ amount: Decimal; method: string; note: string | null; receivedAt: Date }>;
       if (!paymentRows[0]) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
 
       const newAmount = amountInput ?? paymentRows[0].amount;
@@ -1782,11 +1784,11 @@ export class FuelController {
       const newNote = noteInput ?? paymentRows[0].note;
       const newReceivedAt = receivedAtInput ?? paymentRows[0].receivedAt;
 
-      const paidBeforeRows = (await tx.$queryRaw<Array<{ paid: Prisma.Decimal | null }>>`
+      const paidBeforeRows = (await tx.$queryRaw<Array<{ paid: Decimal | null }>>`
         SELECT SUM("amount") AS "paid" FROM "FuelCreditInvoicePayment"
         WHERE "tenantId" = ${tenantId} AND "invoiceNumber" = ${invoiceNumber} AND "id" <> ${paymentId}
-      `) as unknown as Array<{ paid: Prisma.Decimal | null }>;
-      const paidBefore = paidBeforeRows[0]?.paid ?? new Prisma.Decimal(0);
+      `) as unknown as Array<{ paid: Decimal | null }>;
+      const paidBefore = paidBeforeRows[0]?.paid ?? new Decimal(0);
       const remaining = invoiceRows[0].totalAmount.sub(paidBefore);
       if (newAmount.greaterThan(remaining)) {
         throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.paymentExceedsBalance" } }, 400);
@@ -1829,7 +1831,7 @@ export class FuelController {
     const tenantId = req.tenantId;
     await this.ensureFuelCreditInvoiceTables();
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const invRows = (await tx.$queryRaw<Array<{ status: string }>>`
         SELECT "status" FROM "FuelCreditInvoice" WHERE "tenantId" = ${tenantId} AND "invoiceNumber" = ${invoiceNumber} LIMIT 1
       `) as unknown as Array<{ status: string }>;
@@ -1838,24 +1840,24 @@ export class FuelController {
         throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.invoiceVoided" } }, 400);
       }
 
-      const deletedRows = await tx.$queryRaw<Array<{ amount: Prisma.Decimal; method: string }>>`
+      const deletedRows = await tx.$queryRaw<Array<{ amount: Decimal; method: string }>>`
         DELETE FROM "FuelCreditInvoicePayment"
         WHERE "tenantId" = ${tenantId} AND "invoiceNumber" = ${invoiceNumber} AND "id" = ${paymentId}
         RETURNING "amount", "method"
       `;
-      const deleted = (deletedRows as unknown as Array<{ amount: Prisma.Decimal; method: string }>)[0];
+      const deleted = (deletedRows as unknown as Array<{ amount: Decimal; method: string }>)[0];
       if (!deleted) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
 
-      const invoiceRows = (await tx.$queryRaw<Array<{ totalAmount: Prisma.Decimal }>>`
+      const invoiceRows = (await tx.$queryRaw<Array<{ totalAmount: Decimal }>>`
         SELECT "totalAmount" FROM "FuelCreditInvoice" WHERE "tenantId" = ${tenantId} AND "invoiceNumber" = ${invoiceNumber} LIMIT 1
-      `) as unknown as Array<{ totalAmount: Prisma.Decimal }>;
+      `) as unknown as Array<{ totalAmount: Decimal }>;
       if (!invoiceRows[0]) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
 
-      const paidRows = (await tx.$queryRaw<Array<{ paid: Prisma.Decimal | null }>>`
+      const paidRows = (await tx.$queryRaw<Array<{ paid: Decimal | null }>>`
         SELECT SUM("amount") AS "paid" FROM "FuelCreditInvoicePayment"
         WHERE "tenantId" = ${tenantId} AND "invoiceNumber" = ${invoiceNumber}
-      `) as unknown as Array<{ paid: Prisma.Decimal | null }>;
-      const paid = paidRows[0]?.paid ?? new Prisma.Decimal(0);
+      `) as unknown as Array<{ paid: Decimal | null }>;
+      const paid = paidRows[0]?.paid ?? new Decimal(0);
       const status = paid.greaterThanOrEqualTo(invoiceRows[0].totalAmount) ? "paid" : "issued";
       await tx.$executeRaw`
         UPDATE "FuelCreditInvoice"
@@ -1924,7 +1926,7 @@ export class FuelController {
     const nextSeq = Number.isFinite(lastSeq) && lastSeq > 0 ? lastSeq + 1 : 1;
     const invoiceNumber = `${prefix}${String(nextSeq).padStart(4, "0")}`;
 
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const updates = await tx.fuelSale.updateMany({
         where,
         data: { invoiceNumber }
@@ -1946,8 +1948,8 @@ export class FuelController {
           ${fromDate ?? null},
           ${toDate ?? null},
           ${aggregates._count._all},
-          ${aggregates._sum.volume ?? new Prisma.Decimal(0)},
-          ${aggregates._sum.totalAmount ?? new Prisma.Decimal(0)},
+          ${aggregates._sum.volume ?? new Decimal(0)},
+          ${aggregates._sum.totalAmount ?? new Decimal(0)},
           ${"issued"},
           ${req.user.id}
         )
@@ -1968,8 +1970,8 @@ export class FuelController {
         assignedSalesCount: updates.count,
         totals: {
           salesCount: aggregates._count._all,
-          totalVolume: (aggregates._sum.volume ?? new Prisma.Decimal(0)).toString(),
-          totalAmount: (aggregates._sum.totalAmount ?? new Prisma.Decimal(0)).toString()
+          totalVolume: (aggregates._sum.volume ?? new Decimal(0)).toString(),
+          totalAmount: (aggregates._sum.totalAmount ?? new Decimal(0)).toString()
         }
       };
     });
@@ -2020,11 +2022,11 @@ export class FuelController {
       if (!customer) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
     }
 
-    const volume = new Prisma.Decimal(body.volume);
-    const pricePerUnit = new Prisma.Decimal(body.pricePerUnit);
+    const volume = new Decimal(body.volume);
+    const pricePerUnit = new Decimal(body.pricePerUnit);
     const totalAmount = volume.mul(pricePerUnit);
 
-    const sale = await this.prisma.$transaction(async (tx) => {
+    const sale = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       let shiftId: string | null = body.shiftId ?? null;
       if (shiftId) {
         const shift = await tx.fuelShift.findFirst({ where: { tenantId, id: shiftId }, select: { status: true } });
@@ -2120,11 +2122,11 @@ export class FuelController {
       if (!shift) throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.validationError" } }, 400);
     }
 
-    const nextVolume = new Prisma.Decimal(body.volume ?? sale.volume);
-    const nextPrice = new Prisma.Decimal(body.pricePerUnit ?? sale.pricePerUnit);
+    const nextVolume = new Decimal(body.volume ?? sale.volume);
+    const nextPrice = new Decimal(body.pricePerUnit ?? sale.pricePerUnit);
     const nextTotal = nextVolume.mul(nextPrice);
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const nextShiftId = body.shiftId ?? sale.shiftId;
       if (nextShiftId) {
         const shift = await tx.fuelShift.findFirst({ where: { tenantId, id: nextShiftId }, select: { status: true } });
@@ -2156,7 +2158,7 @@ export class FuelController {
         const nextTotalizer = current.currentTotalizerReading.sub(oldVolume).add(nextVolume);
         await tx.fuelNozzle.update({
           where: { id: sale.nozzleId },
-          data: { currentTotalizerReading: nextTotalizer.lessThan(0) ? new Prisma.Decimal(0) : nextTotalizer }
+          data: { currentTotalizerReading: nextTotalizer.lessThan(0) ? new Decimal(0) : nextTotalizer }
         });
       } else {
         const [oldNozzle, newNozzle] = await Promise.all([
@@ -2167,7 +2169,7 @@ export class FuelController {
         const oldNext = oldNozzle.currentTotalizerReading.sub(oldVolume);
         await tx.fuelNozzle.update({
           where: { id: sale.nozzleId },
-          data: { currentTotalizerReading: oldNext.lessThan(0) ? new Prisma.Decimal(0) : oldNext }
+          data: { currentTotalizerReading: oldNext.lessThan(0) ? new Decimal(0) : oldNext }
         });
         await tx.fuelNozzle.update({
           where: { id: nextNozzleId },
@@ -2240,7 +2242,7 @@ export class FuelController {
     });
     if (!sale) throw new HttpException({ error: { code: "NOT_FOUND", message_key: "errors.notFound" } }, 404);
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       if (sale.shiftId) {
         const shift = await tx.fuelShift.findFirst({ where: { tenantId, id: sale.shiftId }, select: { status: true } });
         if (!shift || shift.status !== "open") throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.validationError" } }, 400);
@@ -2255,7 +2257,7 @@ export class FuelController {
         const nextTotalizer = nozzle.currentTotalizerReading.sub(sale.volume);
         await tx.fuelNozzle.update({
           where: { id: sale.nozzleId },
-          data: { currentTotalizerReading: nextTotalizer.lessThan(0) ? new Prisma.Decimal(0) : nextTotalizer }
+          data: { currentTotalizerReading: nextTotalizer.lessThan(0) ? new Decimal(0) : nextTotalizer }
         });
       }
       if (sale.shiftId) {

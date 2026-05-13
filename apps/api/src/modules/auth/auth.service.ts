@@ -51,7 +51,7 @@ export class AuthService {
     const passwordHash = await argon2.hash(input.account.password);
 
     try {
-      const result = await this.prisma.$transaction(async (tx) => {
+      const result = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         const user = await tx.user.create({
           data: {
             fullName: input.account.fullName,
@@ -158,7 +158,7 @@ export class AuthService {
       orderBy: { createdAt: "asc" }
     });
 
-    const tenants = memberships.map((m) => m.tenant);
+    const tenants = memberships.map((m: { tenant: { id: string; slug: string; displayName: string } }) => m.tenant);
     const firstTenant = tenants[0] ?? null;
     const tokens = await this.issueTokens(this.prisma, user.id, firstTenant?.id ?? null);
 
@@ -234,7 +234,7 @@ export class AuthService {
     if (!record) throw new UnauthorizedException();
 
     const passwordHash = await argon2.hash(newPassword);
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.user.update({ where: { id: record.userId }, data: { passwordHash } });
       await tx.passwordResetToken.update({ where: { id: record.id }, data: { usedAt: now } });
       if (record.tenantId) {
@@ -269,21 +269,21 @@ export class AuthService {
     roles: { owner: { id: string }; admin: { id: string }; manager: { id: string }; staff: { id: string }; readOnly: { id: string } }
   ) {
     const allPermissions = await tx.permissionCatalog.findMany({ select: { key: true } });
-    const keys = allPermissions.map((p) => p.key);
-    const platformKeys = keys.filter((k) => k.startsWith("platform."));
-    const shopKeys = keys.filter((k) => k.startsWith("shop."));
-    const fuelKeys = keys.filter((k) => k.startsWith("fuel."));
-    const fuelViewKeys = fuelKeys.filter((k) => k.endsWith(".view"));
+    const keys = allPermissions.map((p: { key: string }) => p.key);
+    const platformKeys = keys.filter((k: string) => k.startsWith("platform."));
+    const shopKeys = keys.filter((k: string) => k.startsWith("shop."));
+    const fuelKeys = keys.filter((k: string) => k.startsWith("fuel."));
+    const fuelViewKeys = fuelKeys.filter((k: string) => k.endsWith(".view"));
 
     const adminKeys = [...platformKeys, ...shopKeys, ...fuelKeys];
     const managerKeys = [
       "platform.users.read",
       "platform.memberships.read",
-      ...shopKeys.filter((k) => !k.endsWith(".delete")),
+      ...shopKeys.filter((k: string) => !k.endsWith(".delete")),
       ...fuelKeys
     ];
-    const staffKeys = [...shopKeys.filter((k) => !k.endsWith(".delete") && !k.endsWith(".export")), ...fuelKeys];
-    const readOnlyKeys = [...shopKeys.filter((k) => k.endsWith(".read")), ...fuelViewKeys];
+    const staffKeys = [...shopKeys.filter((k: string) => !k.endsWith(".delete") && !k.endsWith(".export")), ...fuelKeys];
+    const readOnlyKeys = [...shopKeys.filter((k: string) => k.endsWith(".read")), ...fuelViewKeys];
 
     const data: { tenantId: string; roleId: string; permissionKey: string }[] = [];
 
