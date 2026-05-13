@@ -1,0 +1,60 @@
+{
+  "tenants": {
+    "637cda59-ebcd-42b7-bccc-edc7c5fabffb": {
+      "shop": {
+        "unitId": "f22bf3fa-5a54-46ff-893d-4046ba4cd75c",
+        "locationAId": "fec07055-1f2b-4dff-b526-e410350e4a6b",
+        "locationBId": "f3715971-5853-4221-b430-44f177a7b940",
+        "categoryId": "26808ac7-0c33-43e1-8af9-169cad554394",
+        "productId": "f530cea5-97fb-47df-b09a-3d3002f59e30",
+        "customerId": "7bd51104-a502-4a79-be85-de23c889cee5",
+        "supplierId": "ffb3a63a-5d8a-4fe8-b1a0-b84f875742c6",
+        "invoiceId": "c21eff9a-5943-4dee-baea-8cdee3ed66b9",
+        "purchaseInvoiceId": "4048a16e-b8da-4926-a8f4-1766a5ff396d",
+        "eventIds": {
+          "unitCreate": "b46a508c-a44b-4182-b1b2-2f0f25d83f7f",
+          "locACreate": "aab34c02-c4da-477b-8f7e-7c348db77d21",
+          "locBCreate": "a96662f3-9245-491e-8ff0-60cc13378782",
+          "catCreate": "c4015568-3137-455d-97a6-b16c078a2fe8",
+          "customerCreate": "1ee86268-f65a-4526-832b-e5d73499c5ce",
+          "supplierCreate": "24f50dc8-1f97-475c-b16c-c3d3f7f1dd25",
+          "productCreate": "12862a3f-6550-4422-89e2-7f6d2d6fb4d3",
+          "stockReceive": "b7fc2fa8-f223-4e6c-8f34-252870da80da",
+          "stockTransfer": "676543f1-b5ff-4b45-9f65-32dfb5e1aca2",
+          "invCreate": "44f36e21-cdd4-4749-b9be-be60613d13dd",
+          "invUpdate": "4f64b1d8-2079-49da-baca-8712e2ecfb2d",
+          "invPost": "3928a868-5a31-4338-b98d-74a7ec4fa10b",
+          "pinvCreate": "33fb05ee-54a0-4a5e-8536-be5c813b91f8",
+          "pinvUpdate": "83fc2016-f145-475e-bfd5-0528335f2e53",
+          "pinvReceive": "3a3ae94c-84fd-4d06-ad15-f2ee06d96fcb",
+          "pinvPost": "4fda5b33-8211-42dc-ad1f-196d2caca622",
+          "pinvPay": "6126334c-23d7-4003-84b8-ec1230091884"
+        }
+      },
+      "pharmacy": {
+        "unitId": "97ae9303-10be-425f-b308-371204e50cb4",
+        "locationAId": "103e88df-b53b-4764-ad96-dd14f427971b",
+        "locationBId": "1bbaf996-f858-47f8-a597-7ba062e59d09",
+        "categoryId": "94914021-9db7-4880-bc11-4dca24e22575",
+        "productId": "4679c31e-29d2-420f-824d-b600cf296ae5",
+        "supplierId": "4482ed75-c66a-4831-91b4-fcb846284bde",
+        "purchaseInvoiceId": "57d63b14-bd34-4168-8ca0-4ab93c578b56",
+        "purchaseInvoiceLineId": "af4f6e4d-7977-47af-b1ef-d56115939046",
+        "eventIds": {
+          "unitCreate": "b6b07146-fd80-4904-9a38-7c3e9585534e",
+          "locACreate": "cd349d5a-4536-42dc-9caa-25dc96faf871",
+          "locBCreate": "2e1a671d-e244-4af7-bd24-23900322ee5f",
+          "catCreate": "013814e1-142d-49b9-a7e0-e58cdcb7b1c4",
+          "productCreate": "23b58806-db24-4f77-b5d0-d8c0335268f2",
+          "stockReceive": "e7aabf1b-f802-49b7-993b-a8144bc93080",
+          "stockTransfer": "9022f436-6821-44a0-8a06-103cc90d4113",
+          "supplierCreate": "2045a2fa-5193-46a5-b6e3-e59d8955e0b8",
+          "pinvCreate": "1b020bfb-3887-4b27-90b3-ad783669605b",
+          "pinvUpdate": "67fd8caa-088a-4a0a-8e73-68cadadc3b5f",
+          "pinvReceive": "726bb80a-fc47-4e7d-a4ed-64c389abf046",
+          "pinvPost": "d002a9ce-042a-49ae-916d-b41370681150"
+        }
+      }
+    }
+  }
+}

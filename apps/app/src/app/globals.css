@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  html[data-app-fullscreen="1"] .app-global-header {
+    display: none;
+  }
+
+  html[data-app-fullscreen="1"] .app-global-main {
+    padding: 0;
+  }
+
+  html[data-app-fullscreen="1"] .tenant-mobile-header,
+  html[data-app-fullscreen="1"] .tenant-shell-sidebar {
+    display: none !important;
+  }
+
+  html[data-app-fullscreen="1"] .tenant-shell-body {
+    display: block;
+  }
+
+  html[data-app-fullscreen="1"] .tenant-shell-content,
+  html[data-app-fullscreen="1"] .tenant-shell-content-inner {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+  }
+}
