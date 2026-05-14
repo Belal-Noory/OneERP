@@ -64,13 +64,13 @@ export async function ensureFuelDefaultRolePermissions(prisma: PrismaService, te
     prisma.permissionCatalog.findMany({ select: { key: true } })
   ]);
 
-  const fuelKeys = permissions.map((p) => p.key).filter((k) => k.startsWith("fuel."));
+  const fuelKeys = permissions.map((p: { key: string }) => p.key).filter((k: string) => k.startsWith("fuel."));
   if (roles.length === 0 || fuelKeys.length === 0) {
     fuelPermissionsBackfilledTenants.add(tenantId);
     return;
   }
 
-  const fuelViewKeys = fuelKeys.filter((k) => k.endsWith(".view"));
+  const fuelViewKeys = fuelKeys.filter((k: string) => k.endsWith(".view"));
   const byRoleName: Record<string, string[]> = {
     Admin: fuelKeys,
     Manager: fuelKeys,
@@ -94,7 +94,7 @@ export async function ensureFuelDefaultRolePermissions(prisma: PrismaService, te
   });
   if (membershipsWithExplicitModules.length > 0) {
     await prisma.membershipEnabledModule.createMany({
-      data: membershipsWithExplicitModules.map((m) => ({ tenantId, membershipId: m.id, moduleId: "fuel" })),
+      data: membershipsWithExplicitModules.map((m: { id: string }) => ({ tenantId, membershipId: m.id, moduleId: "fuel" })),
       skipDuplicates: true
     });
   }
@@ -122,13 +122,13 @@ export async function ensureMspDefaultRolePermissions(prisma: PrismaService, ten
     prisma.permissionCatalog.findMany({ select: { key: true } })
   ]);
 
-  const mspKeys = permissions.map((p) => p.key).filter((k) => k.startsWith("msp."));
+  const mspKeys = permissions.map((p: { key: string }) => p.key).filter((k: string) => k.startsWith("msp."));
   if (roles.length === 0 || mspKeys.length === 0) {
     mspPermissionsBackfilledTenants.add(tenantId);
     return;
   }
 
-  const mspViewKeys = mspKeys.filter((k) => k.endsWith(".view"));
+  const mspViewKeys = mspKeys.filter((k: string) => k.endsWith(".view"));
   const byRoleName: Record<string, string[]> = {
     Admin: mspKeys,
     Manager: mspKeys,
@@ -152,7 +152,7 @@ export async function ensureMspDefaultRolePermissions(prisma: PrismaService, ten
   });
   if (membershipsWithExplicitModules.length > 0) {
     await prisma.membershipEnabledModule.createMany({
-      data: membershipsWithExplicitModules.map((m) => ({ tenantId, membershipId: m.id, moduleId: "msp" })),
+      data: membershipsWithExplicitModules.map((m: { id: string }) => ({ tenantId, membershipId: m.id, moduleId: "msp" })),
       skipDuplicates: true
     });
   }

@@ -1,6 +1,9 @@
 import { Body, Controller, Get, HttpException, Param, Patch, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
-import { Prisma } from "@prisma/client";
+import { Prisma as PrismaRuntime } from "@prisma/client";
+import type { Prisma as PrismaTypes } from "@prisma/client";
+import type { Sql as PrismaSql } from "@prisma/client/runtime/library";
+import { Decimal as PrismaDecimal } from "@prisma/client/runtime/library";
 import { PrismaService } from "../../prisma/prisma.service";
 import { MembershipModuleGuard } from "../../shared/membership-module.guard";
 import { ModuleEnabledGuard } from "../../shared/module-enabled.guard";
@@ -63,6 +66,14 @@ import {
   UpdateMspSettingsDto,
   UpsertMspRateDto
 } from "./dto/msp.dto";
+
+const Prisma = { ...PrismaRuntime, Decimal: PrismaDecimal };
+
+namespace Prisma {
+  export type Decimal = PrismaDecimal;
+  export type Sql = PrismaSql;
+  export type InputJsonValue = PrismaTypes.InputJsonValue;
+}
 
 @Controller("msp")
 @UseGuards(AuthGuard("jwt"), TenantGuard, ModuleEnabledGuard("msp"), MembershipModuleGuard("msp"), PermissionsGuard)
@@ -1090,7 +1101,7 @@ export class MspController {
 
     const opening = body.openingBalance !== undefined ? this.normalizeMoneyInput(body.openingBalance, true) : null;
 
-    const createdId = await this.prisma.$transaction(async (tx) => {
+    const createdId = await this.prisma.$transaction(async (tx: PrismaTypes.TransactionClient) => {
       const created = (await tx.$queryRaw<Array<{ id: string }>>`
         INSERT INTO "MspAccount" ("tenantId","type","name","currencyCode","branchId","isActive","createdAt","updatedAt","createdByUserId","updatedByUserId")
         VALUES (${tenantId}, ${type}, ${name}, ${currencyCode}, ${branchId}::uuid, ${isActive}, NOW(), NOW(), ${req.user.id}, ${req.user.id})
@@ -1184,7 +1195,7 @@ export class MspController {
       throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.validationError" } }, 400);
     }
 
-    const transferId = await this.prisma.$transaction(async (tx) => {
+    const transferId = await this.prisma.$transaction(async (tx: PrismaTypes.TransactionClient) => {
       const t = (await tx.$queryRaw<Array<{ id: string }>>`SELECT uuid_generate_v4()::text AS "id"`)[0];
       const id = t?.id ?? "";
       if (!id) throw new HttpException({ error: { code: "INTERNAL_ERROR", message_key: "errors.internal" } }, 500);
@@ -1235,7 +1246,7 @@ export class MspController {
     await this.assertActiveCashBankAccount(tenantId, accountId);
 
     const signed = direction === "in" ? amount : amount.mul(-1);
-    const id = await this.prisma.$transaction(async (tx) => {
+    const id = await this.prisma.$transaction(async (tx: PrismaTypes.TransactionClient) => {
       return await this.insertLedgerEntry(tx, {
         tenantId,
         accountId,
@@ -1382,7 +1393,7 @@ export class MspController {
     const replace = body.replace === true;
     const lines = body.lines ?? [];
 
-    const inserted = await this.prisma.$transaction(async (tx) => {
+    const inserted = await this.prisma.$transaction(async (tx: PrismaTypes.TransactionClient) => {
       if (replace) {
         await tx.$queryRaw`DELETE FROM "MspBankStatementMatch" WHERE "tenantId"=${tenantId} AND "statementLineId" IN (SELECT "id" FROM "MspBankStatementLine" WHERE "tenantId"=${tenantId} AND "statementId"=${id}::uuid)`;
         await tx.$queryRaw`DELETE FROM "MspBankStatementLine" WHERE "tenantId"=${tenantId} AND "statementId"=${id}::uuid`;
@@ -1617,7 +1628,7 @@ export class MspController {
     const fromTolStr = fromTol.toISOString().slice(0, 10);
     const toTolStr = toTol.toISOString().slice(0, 10);
 
-    const stats = await this.prisma.$transaction(async (tx) => {
+    const stats = await this.prisma.$transaction(async (tx: PrismaTypes.TransactionClient) => {
       const lines = await tx.$queryRaw<
         Array<{ id: string; lineDate: Date; amountSigned: Prisma.Decimal }>
       >(Prisma.sql`
@@ -1631,7 +1642,7 @@ export class MspController {
       const matchedLedgerRows = await tx.$queryRaw<Array<{ ledgerEntryId: string }>>(Prisma.sql`
         SELECT "ledgerEntryId"::text AS "ledgerEntryId" FROM "MspBankStatementMatch" WHERE "tenantId"=${tenantId}
       `);
-      const matchedLedgerIds = new Set<string>(matchedLedgerRows.map((r) => r.ledgerEntryId));
+      const matchedLedgerIds = new Set<string>(matchedLedgerRows.map((r: { ledgerEntryId: string }) => r.ledgerEntryId));
 
       const ledger = await tx.$queryRaw<
         Array<{ ledgerEntryId: string; entryDate: Date; occurredAt: Date; amountSigned: Prisma.Decimal }>
@@ -1798,7 +1809,7 @@ export class MspController {
     const entryDate = body.entryDate?.trim() ? this.parseIsoDateOnly(body.entryDate, false) : line.lineDate.toISOString().slice(0, 10);
     const note = body.note?.trim() ? body.note.trim() : "Bank adjustment";
 
-    const ledgerEntryId = await this.prisma.$transaction(async (tx) => {
+    const ledgerEntryId = await this.prisma.$transaction(async (tx: PrismaTypes.TransactionClient) => {
       const created = await this.insertLedgerEntry(tx, { tenantId, accountId: statement.accountId, entryDate, source: "bank_adjustment", ref: lineId, amountSigned, note, userId: req.user.id });
       await tx.$queryRaw`
         INSERT INTO "MspBankStatementMatch" ("tenantId","statementLineId","ledgerEntryId","matchedAt","matchedByUserId")

@@ -635,8 +635,8 @@ export class FuelController {
     if (shift.status !== "open") throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.validationError" } }, 400);
 
     type CloseNozzleInput = { nozzleId: string; closingReading: number | string };
-    const closingByNozzle = new Map<string, CloseNozzleInput>((body.nozzles ?? []).map((n) => [n.nozzleId, n]));
-    if (!shift.readings.every((r) => closingByNozzle.has(r.nozzleId))) {
+    const closingByNozzle = new Map<string, CloseNozzleInput>((body.nozzles ?? []).map((n: CloseNozzleInput) => [n.nozzleId, n]));
+    if (!shift.readings.every((r: { nozzleId: string }) => closingByNozzle.has(r.nozzleId))) {
       throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.validationError" } }, 400);
     }
 
@@ -732,7 +732,7 @@ export class FuelController {
         where: { tenantId },
         include: { updatedBy: { select: { id: true, fullName: true } } }
       });
-      return { data: prices.map((p) => ({ ...p, pricePerUnit: p.pricePerUnit.toString() })) };
+      return { data: prices.map((p: { pricePerUnit: Decimal } & Record<string, unknown>) => ({ ...p, pricePerUnit: p.pricePerUnit.toString() })) };
     } catch (err) {
       const e = err as { code?: string };
       if (e?.code === "P2021") {
@@ -876,7 +876,7 @@ export class FuelController {
         totalSales: totalSales.toString(),
         totalVolume: totalVolume.toString(),
         salesCount: count,
-        sales: sales.map((s) => ({
+        sales: sales.map((s: { volume: Decimal; totalAmount: Decimal } & Record<string, unknown>) => ({
           ...s,
           volume: s.volume.toString(),
           totalAmount: s.totalAmount.toString()
@@ -906,18 +906,26 @@ export class FuelController {
       _max: { createdAt: true }
     });
 
-    const customerIds = grouped.map((g) => g.customerId).filter((v): v is string => typeof v === "string");
+    const customerIds = grouped
+      .map((g: { customerId: string | null }) => g.customerId)
+      .filter((v): v is string => typeof v === "string");
     const customers = customerIds.length
       ? await this.prisma.shopCustomer.findMany({
           where: { tenantId, id: { in: customerIds } },
           select: { id: true, name: true, phone: true }
         })
       : [];
-    const byId = new Map(customers.map((c) => [c.id, c]));
+    const byId = new Map(customers.map((c: { id: string; name: string; phone: string | null }) => [c.id, c]));
 
     return {
       data: grouped
-        .map((g) => {
+        .map(
+          (g: {
+            customerId: string | null;
+            _sum: { totalAmount: Decimal | null; volume: Decimal | null };
+            _count: { _all: number };
+            _max: { createdAt: Date | null };
+          }) => {
           const customerId = g.customerId as string;
           const c = byId.get(customerId);
           return {
@@ -929,8 +937,9 @@ export class FuelController {
             totalAmount: (g._sum.totalAmount ?? new Decimal(0)).toString(),
             lastSaleAt: g._max.createdAt
           };
-        })
-        .sort((a, b) => new Date(b.lastSaleAt ?? 0).getTime() - new Date(a.lastSaleAt ?? 0).getTime())
+          }
+        )
+        .sort((a: { lastSaleAt: Date | null }, b: { lastSaleAt: Date | null }) => new Date(b.lastSaleAt ?? 0).getTime() - new Date(a.lastSaleAt ?? 0).getTime())
     };
   }
 
@@ -990,14 +999,14 @@ export class FuelController {
       })
     ]);
 
-    const nozzleIds = Array.from(new Set(byNozzle.map((x) => x.nozzleId)));
+    const nozzleIds = Array.from(new Set(byNozzle.map((x: { nozzleId: string }) => x.nozzleId)));
     const nozzles = nozzleIds.length
       ? await this.prisma.fuelNozzle.findMany({
           where: { tenantId, id: { in: nozzleIds } },
           select: { id: true, name: true, tank: { select: { name: true, fuelType: true } } }
         })
       : [];
-    const nozzleMap = new Map(nozzles.map((n) => [n.id, n]));
+    const nozzleMap = new Map(nozzles.map((n: { id: string; name: string; tank: { name: string; fuelType: string } }) => [n.id, n]));
 
     return {
       data: {
@@ -1011,7 +1020,7 @@ export class FuelController {
           totalVolume: (aggregates._sum.volume ?? new Decimal(0)).toString(),
           totalAmount: (aggregates._sum.totalAmount ?? new Decimal(0)).toString()
         },
-        byNozzle: byNozzle.map((r) => {
+        byNozzle: byNozzle.map((r: { nozzleId: string; _count: { _all: number }; _sum: { totalAmount: Decimal | null; volume: Decimal | null } }) => {
           const ref = nozzleMap.get(r.nozzleId);
           return {
             nozzleId: r.nozzleId,
@@ -1023,7 +1032,7 @@ export class FuelController {
             totalAmount: (r._sum.totalAmount ?? new Decimal(0)).toString()
           };
         }),
-        sales: sales.map((s) => ({
+        sales: sales.map((s: { volume: Decimal; pricePerUnit: Decimal; totalAmount: Decimal } & Record<string, unknown>) => ({
           ...s,
           volume: s.volume.toString(),
           pricePerUnit: s.pricePerUnit.toString(),

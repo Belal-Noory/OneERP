@@ -27,7 +27,7 @@ export class MeController {
           fullName: req.user.fullName,
           email: req.user.email ?? undefined
         },
-        memberships: memberships.map((m) => ({
+        memberships: memberships.map((m: { tenantId: string; tenant: { slug: string; displayName: string }; role: { name: string } }) => ({
           tenantId: m.tenantId,
           tenantSlug: m.tenant.slug,
           tenantDisplayName: m.tenant.displayName,
