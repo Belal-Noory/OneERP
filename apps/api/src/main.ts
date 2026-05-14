@@ -14,17 +14,29 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
-      
-      const isLocalhost = origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:");
-      const isOneErpOnline = origin.endsWith(".oneerp.online") || origin === "https://oneerp.online";
-      
-      if (isLocalhost || isOneErpOnline || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(null, false);
+
+      const normalized = origin.trim();
+
+      let hostname: string | null = null;
+      try {
+        hostname = new URL(normalized).hostname.toLowerCase();
+      } catch {
+        hostname = null;
       }
+
+      const isLocalhost =
+        hostname === "localhost" ||
+        hostname === "127.0.0.1" ||
+        normalized.startsWith("http://localhost:") ||
+        normalized.startsWith("http://127.0.0.1:");
+
+      const isOneErpOnline = hostname === "oneerp.online" || hostname?.endsWith(".oneerp.online") === true;
+
+      if (isLocalhost || isOneErpOnline) return callback(null, true);
+      if (allowedOrigins.includes(normalized)) return callback(null, true);
+
+      return callback(null, false);
     },
     credentials: true
   });
