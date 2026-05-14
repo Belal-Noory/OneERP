@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node dist/main.js",
     "start:dev": "nest start --watch --preserveWatchOutput",
-    "build": "nest build",
+    "build": "npm run prisma:generate && nest build",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "prisma:generate": "prisma generate",
