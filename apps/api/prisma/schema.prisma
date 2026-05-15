@@ -307,6 +307,7 @@ model ModuleCatalog {
   enabledModules           TenantEnabledModule[]
   membershipEnabledModules MembershipEnabledModule[]
   subscriptionItems        SubscriptionItem[]
+  tutorials                Tutorial[]
 }
 
 model TenantEnabledModule {
