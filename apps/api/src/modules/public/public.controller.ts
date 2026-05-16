@@ -731,7 +731,7 @@ async function notifyContactEmail(payload: {
   const host = process.env.CONTACT_EMAIL_SMTP_HOST?.trim();
   const port = Number.parseInt(process.env.CONTACT_EMAIL_SMTP_PORT?.trim() ?? "465", 10) || 465;
   const user = process.env.CONTACT_EMAIL_USER?.trim();
-  const pass = process.env.CONTACT_EMAIL_PASS?.trim();
+  const pass = (process.env.CONTACT_EMAIL_PASS ?? "").replace(/\s+/g, "");
   const to = (process.env.CONTACT_EMAIL_TO ?? "").trim();
   if (!host || !user || !pass || !to) return;
 

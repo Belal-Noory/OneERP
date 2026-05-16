@@ -64,12 +64,12 @@ export function ContactFormClient(props: { defaultServiceType?: ServiceType }) {
     const phone = phoneNumber.trim();
     const msg = message.trim();
 
-    if (!name) errs.fullName = t("public.contact.form.error.fullNameRequired");
+    if (!name || name.length < 2) errs.fullName = t("public.contact.form.error.fullNameRequired");
     if (!e) errs.email = t("public.contact.form.error.emailRequired");
     else if (!isValidEmail(e)) errs.email = t("public.contact.form.error.emailInvalid");
-    if (!phone) errs.phoneNumber = t("public.contact.form.error.phoneRequired");
+    if (!phone || phone.length < 5) errs.phoneNumber = t("public.contact.form.error.phoneRequired");
     if (!serviceType) errs.serviceType = t("public.contact.form.error.serviceRequired");
-    if (!msg) errs.message = t("public.contact.form.error.messageRequired");
+    if (!msg || msg.length < 5) errs.message = t("public.contact.form.error.messageRequired");
     if (msg.length > 2000) errs.message = t("public.contact.form.error.messageTooLong");
 
     setFieldErrors(errs);
@@ -86,13 +86,14 @@ export function ContactFormClient(props: { defaultServiceType?: ServiceType }) {
 
         setSubmitting(true);
         try {
+          const org = organizationName.trim();
           const res = await fetch(joinUrl(getApiBaseUrl(), "/api/public/contact"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
             body: JSON.stringify({
               fullName: fullName.trim(),
-              organizationName: organizationName.trim() || undefined,
+              organizationName: org.length >= 2 ? org : undefined,
               email: email.trim(),
               phoneNumber: phoneNumber.trim(),
               serviceType,
