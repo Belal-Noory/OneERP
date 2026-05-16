@@ -1,7 +1,7 @@
 "use client";
 
-import { isRtlLocale, supportedLocales, type Locale, t as translate } from "@oneerp/i18n";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { supportedLocales, type Locale, t as translate } from "@oneerp/i18n";
+import { useEffect, useRef, useState } from "react";
 import { LOCALE_COOKIE } from "@/lib/locale-constants";
 import { IconGlobe } from "@/components/Graphics";
 
@@ -9,7 +9,6 @@ export function LanguageSwitcher(props: { locale: Locale }) {
   const [locale, setLocale] = useState<Locale>(props.locale);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const rtl = useMemo(() => isRtlLocale(locale), [locale]);
 
   useEffect(() => {
     setLocale(props.locale);
