@@ -126,7 +126,7 @@ export function OwnerTutorialsClient() {
           if (!form.moduleId) return true;
           if (!(s.module_id === form.moduleId || s.module_id === null)) return false;
         }
-        if (form.categoryId) return s.category_id === form.categoryId;
+        if (form.categoryId) return s.category_id === form.categoryId || s.category_id === null;
         return true;
       })
       .sort((a, b) => a.title_en.localeCompare(b.title_en));

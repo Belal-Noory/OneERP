@@ -16,8 +16,16 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private async ensureLearningCenterSeeded() {
     const prismaAny = this as unknown as {
       moduleCatalog?: { findMany: (args: unknown) => Promise<Array<{ id: string }>> };
-      tutorialCategory?: { count: (args?: unknown) => Promise<number>; upsert: (args: unknown) => Promise<unknown> };
-      tutorialSeries?: { upsert: (args: unknown) => Promise<unknown> };
+      tutorialCategory?: {
+        count: (args?: unknown) => Promise<number>;
+        upsert: (args: unknown) => Promise<unknown>;
+        findMany: (args: unknown) => Promise<Array<{ id: string; slug: string; scope: string; moduleId: string | null }>>;
+      };
+      tutorialSeries?: {
+        upsert: (args: unknown) => Promise<unknown>;
+        findUnique: (args: unknown) => Promise<{ id: string; categoryId: string | null } | null>;
+        update: (args: unknown) => Promise<unknown>;
+      };
     };
     if (!prismaAny.moduleCatalog || !prismaAny.tutorialCategory || !prismaAny.tutorialSeries) return;
 
@@ -81,10 +89,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       }
     }
 
+    const allCategories = await prismaAny.tutorialCategory.findMany({ select: { id: true, slug: true, scope: true, moduleId: true } });
+    const categoryIdBySlug = new Map(allCategories.map((c) => [c.slug, c.id] as const));
+
     for (const s of [
       { slug: "getting-started-series", title: "Getting Started Series", orderNo: 10, categorySlug: "getting-started" },
       { slug: "account-setup-guide", title: "Account Setup Guide", orderNo: 20, categorySlug: "account-access" }
     ]) {
+      const categoryId = categoryIdBySlug.get(s.categorySlug) ?? null;
       await prismaAny.tutorialSeries.upsert({
         where: { slug: s.slug },
         update: {},
@@ -92,7 +104,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           slug: s.slug,
           scope: "general",
           moduleId: null,
-          categoryId: null,
+          categoryId,
           titleEn: s.title,
           titleFa: s.title,
           titlePs: s.title,
@@ -104,16 +116,26 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           isActive: true
         }
       });
+
+      if (categoryId) {
+        const existing = await prismaAny.tutorialSeries.findUnique({ where: { slug: s.slug }, select: { id: true, categoryId: true } });
+        if (existing && existing.categoryId !== categoryId) {
+          await prismaAny.tutorialSeries.update({ where: { id: existing.id }, data: { categoryId } });
+        }
+      }
     }
 
     for (const m of modules) {
       const base = titleCase(m.id);
       const seriesToCreate = [
-        { slug: `${m.id}-getting-started`, title: `${base} Getting Started`, orderNo: 10 },
-        { slug: `${m.id}-full-training`, title: `${base} Full Training`, orderNo: 20 },
-        { slug: `${m.id}-workflow`, title: `${base} Workflow`, orderNo: 30 }
+        { slug: `${m.id}-getting-started`, title: `${base} Getting Started`, orderNo: 10, categorySlug: `${m.id}-training` },
+        { slug: `${m.id}-full-training`, title: `${base} Full Training`, orderNo: 20, categorySlug: `${m.id}-training` },
+        { slug: `${m.id}-inventory-workflow`, title: `${base} Inventory Workflow`, orderNo: 30, categorySlug: `${m.id}-inventory` },
+        { slug: `${m.id}-sales-workflow`, title: `${base} Sales Workflow`, orderNo: 40, categorySlug: `${m.id}-sales` },
+        { slug: `${m.id}-reporting-tutorials`, title: `${base} Reporting Tutorials`, orderNo: 50, categorySlug: `${m.id}-reports` }
       ];
       for (const s of seriesToCreate) {
+        const categoryId = categoryIdBySlug.get(s.categorySlug) ?? null;
         await prismaAny.tutorialSeries.upsert({
           where: { slug: s.slug },
           update: {},
@@ -121,7 +143,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             slug: s.slug,
             scope: "module",
             moduleId: m.id,
-            categoryId: null,
+            categoryId,
             titleEn: s.title,
             titleFa: s.title,
             titlePs: s.title,
@@ -133,6 +155,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
             isActive: true
           }
         });
+
+        if (categoryId) {
+          const existing = await prismaAny.tutorialSeries.findUnique({ where: { slug: s.slug }, select: { id: true, categoryId: true } });
+          if (existing && existing.categoryId !== categoryId) {
+            await prismaAny.tutorialSeries.update({ where: { id: existing.id }, data: { categoryId } });
+          }
+        }
       }
     }
   }
