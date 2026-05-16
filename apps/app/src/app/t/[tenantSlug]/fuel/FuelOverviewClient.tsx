@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useClientI18n } from "@/lib/client-i18n";
 import { apiFetch } from "@/lib/auth-fetch";
 import Link from "next/link";
+import { ModuleTrainingSection } from "@/components/ModuleTrainingSection";
 
 type Tank = {
   id: string;
@@ -230,6 +231,8 @@ export function FuelOverviewClient(props: { tenantSlug: string }) {
           </div>
         </div>
       </div>
+
+      <ModuleTrainingSection moduleId="fuel" />
     </div>
   );
 }

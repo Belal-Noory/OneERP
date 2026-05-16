@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/auth-fetch";
 import { useClientI18n } from "@/lib/client-i18n";
 import { formatMoney } from "@/lib/currency-catalog";
+import { ModuleTrainingSection } from "@/components/ModuleTrainingSection";
 
 type MeResponse = {
   data: {
@@ -241,6 +242,8 @@ export function PharmacyOverviewClient(props: { tenantSlug: string }) {
           </div>
         </div>
       </div>
+
+      <ModuleTrainingSection moduleId="pharmacy" />
 
       <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-card md:p-6">
         <div className="flex items-start justify-between gap-4">

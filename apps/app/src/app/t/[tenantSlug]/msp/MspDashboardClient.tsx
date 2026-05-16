@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/auth-fetch";
 import { useClientI18n } from "@/lib/client-i18n";
+import { ModuleTrainingSection } from "@/components/ModuleTrainingSection";
 
 type MeResponse = { data: { memberships: { tenantId: string; tenantSlug: string }[] } };
 type DashboardResponse = { data: { kpis: { customers: number; partners: number; branches: number } } };
@@ -114,6 +115,8 @@ export function MspDashboardClient(props: { tenantSlug: string }) {
           <QuickLink href={`${base}/settlements`} label={t("app.msp.tab.settlements")} />
         </div>
       </div>
+
+      <ModuleTrainingSection moduleId="msp" />
     </div>
   );
 }
@@ -135,4 +138,3 @@ function QuickLink(props: { href: string; label: string }) {
     </Link>
   );
 }
-

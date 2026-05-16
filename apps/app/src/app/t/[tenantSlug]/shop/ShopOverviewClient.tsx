@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/auth-fetch";
 import { useClientI18n } from "@/lib/client-i18n";
 import { currencies } from "@/lib/currency-catalog";
 import { Modal } from "@/components/Modal";
+import { ModuleTrainingSection } from "@/components/ModuleTrainingSection";
 
 type MeResponse = {
   data: {
@@ -253,6 +254,8 @@ export function ShopOverviewClient(props: { tenantSlug: string }) {
           </div>
         </div>
       </div>
+
+      <ModuleTrainingSection moduleId="shop" />
 
       <Modal open={settingsOpen} onClose={() => setSettingsOpen(false)}>
         <div className="p-6 md:p-8">
