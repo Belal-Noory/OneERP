@@ -26,4 +26,41 @@
     width: 100%;
     margin: 0;
   }
+
+  .print-only {
+    display: none;
+  }
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+
+  .print-hidden {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .app-global-header,
+  .tenant-mobile-header,
+  .tenant-shell-sidebar {
+    display: none !important;
+  }
+
+  .app-global-main,
+  .tenant-shell-content,
+  .tenant-shell-content-inner {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .shadow-card {
+    box-shadow: none !important;
+  }
 }

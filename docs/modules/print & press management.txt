@@ -1,0 +1,663 @@
+# ONEERP – Print & Press Management Module
+
+## Module Name
+Print & Press Management
+
+---
+
+# Overview
+
+The Print & Press Management module is a complete operational ERP solution for printing and press businesses integrated into the ONEERP ecosystem.
+
+The system is designed for:
+- Digital printing shops
+- Offset printing presses
+- Flex/banner printing businesses
+- Packaging printing
+- Photocopy and document centers
+- Advertising print shops
+- Large and small press businesses
+
+The module should support:
+- Single-user businesses
+- Multi-user teams
+- Multi-branch scalability
+- Multi-tenant architecture (already implemented in ONEERP)
+
+The module must follow the same architecture, coding structure, UI/UX, responsive design, navigation system, tenant management, and activation workflow used in existing ONEERP modules such as:
+- Pharmacy Module
+- Shop Module
+- Sarafi System
+
+---
+
+# Public Website Integration
+
+The module must be added to the ONEERP public website as a new module offering.
+
+## Requirements
+- [DONE] Add module showcase page
+- [DONE] Add module feature listing
+- [DONE] Add screenshots/demo section
+- [DONE] Add pricing section (optional)
+- [DONE] Add “Request Activation” button
+- [DONE] Add module to public modules listing
+
+---
+
+# Module Activation Workflow
+
+The module must follow the same activation/deactivation architecture used in existing ONEERP modules.
+
+## Activation Requirements
+- [DONE] Tenant can request activation from public website
+- [DONE] Admin can approve/reject activation
+- Once activated:
+  - Module is automatically added to tenant sidebar
+  - Navigation menus become available
+  - Permissions are initialized
+- Once disabled:
+  - Module is removed from tenant sidebar
+  - Navigation is hidden
+  - Access is revoked
+
+---
+
+# Technical Architecture
+
+## The module must support:
+- Multi-tenant architecture
+- Team-based access
+- Role-based permissions
+- Branch support
+- Warehouse support
+- Mobile responsiveness
+- Dark/light mode compatibility
+- API-ready structure
+- Shared reusable services
+
+---
+
+# Main Features
+
+# 1. Dashboard
+
+## Dashboard Widgets
+- [DONE] Today Income
+- [DONE] Today Expenses
+- [DONE] Monthly Revenue
+- [DONE] Pending Payments
+- [DONE] Pending Jobs
+- [DONE] Completed Jobs
+- [DONE] Urgent Orders
+- [PARTIAL] Low Stock Alerts (placeholder: 0, inventory not implemented yet)
+- [DONE] Profit Summary
+- [DONE] Tax Summary
+
+## Charts
+- [DONE] Revenue Trends
+- [DONE] Expense Trends
+- [DONE] Job Status Analytics
+- [DONE] Customer Analytics
+- [PARTIAL] Inventory Usage Analytics (based on expense categories; stock/material tracking not implemented yet)
+
+---
+
+# 2. Customer Management
+
+## Features
+- [DONE] Customer registration
+- [DONE] Customer profile
+- [PARTIAL] Contact management
+- [DONE] Address management
+- [DONE] Tax/VAT number
+- [DONE] Customer ledger
+- [DONE] Due balance tracking
+- [DONE] Payment history
+- [DONE] Previous orders
+- [DONE] Notes and attachments
+
+## Fields
+- [DONE] Full Name
+- [DONE] Company Name
+- [DONE] Phone
+- [DONE] Email
+- [DONE] Address
+- [DONE] Tax Number
+- [DONE] Customer Type
+- [DONE] Status
+
+---
+
+# 3. Print Job / Order Management
+
+This is the core feature of the module.
+
+Every printing request should be managed as a Job Order.
+
+## Supported Job Types
+- Business Cards
+- Flyers
+- Brochures
+- Banners
+- Flex Printing
+- Stickers
+- Wedding Cards
+- Packaging
+- Books
+- ID Cards
+- T-Shirt Printing
+- Mug Printing
+- Photocopy Jobs
+- Custom Printing
+
+---
+
+## Job Information
+
+### Basic Information
+- Job ID
+- Order Date
+- Delivery Date
+- Priority
+- Status
+- Assigned User
+- Branch
+
+### Customer Information
+- Customer
+- Contact Person
+
+### Printing Details
+- Print Type
+- Size
+- Quantity
+- Number of Pages
+- Color/BW
+- Paper Type
+- Material Type
+- Ink Type
+- Finishing Type
+- Lamination
+- Binding
+- Folding
+- Cutting
+- Eyelets
+
+### Financial Information
+- Estimated Cost
+- Actual Cost
+- Selling Price
+- Discount
+- Tax
+- Paid Amount
+- Remaining Amount
+- Profit Margin
+
+### Workflow Status
+- Received
+- Designing
+- Customer Approval
+- Printing
+- Finishing
+- Packaging
+- Ready
+- Delivered
+- Cancelled
+
+---
+
+# 4. Quotation Management
+
+## Features
+- [DONE] Create quotations
+- [DONE] Convert quotation to invoice
+- [DONE] PDF export (real PDF download)
+- [DONE] Print support
+- [DONE] Email sharing
+- [DONE] WhatsApp sharing
+- [DONE] Company branding (settings + logo upload)
+- [DONE] QR/Barcode support
+
+---
+
+# 5. Invoice Management
+
+## Features
+- [DONE] Invoice generation
+- [DONE] Tax calculations
+- [DONE] Partial payments
+- [DONE] Advance payments
+- [DONE] Payment tracking
+- [DONE] Receipt generation
+- [DONE] Invoice printing
+- [DONE] PDF export (real PDF download)
+- [PARTIAL] Multi-currency support (currency dropdown + per-document currency; no FX rates yet)
+
+---
+
+# 6. Expense Management
+
+## Expense Categories
+- Paper Purchase
+- Ink/Toner
+- Electricity
+- Rent
+- Salaries
+- Internet
+- Transportation
+- Maintenance
+- Packaging
+- Machine Repair
+- Miscellaneous
+
+## Features
+- [DONE] Add/Edit/Delete expenses
+- [DONE] Recurring expenses
+- [DONE] Expense attachments
+- [DONE] Supplier linkage
+- [DONE] Expense reports
+- [DONE] Expense filtering
+- [DONE] Monthly/yearly summaries
+
+---
+
+# 7. Income Management
+
+## Features
+- [DONE] Direct income entry
+- [PARTIAL] Walk-in sales
+- [PARTIAL] Service income
+- [PARTIAL] Advance income
+- [PARTIAL] Other income
+- [DONE] Daily reports
+- [DONE] Monthly/yearly reports
+
+---
+
+# 8. Inventory Management
+
+## Inventory Types
+- Paper
+- Ink
+- Toner
+- Vinyl
+- Flex Material
+- Packaging Material
+- Binding Materials
+- Printing Accessories
+
+## Features
+- Stock in/out
+- Low stock alerts
+- Inventory valuation
+- Supplier linkage
+- Purchase history
+- Material usage tracking
+- Batch tracking (future-ready)
+
+---
+
+# 9. Supplier Management
+
+## Features
+- Supplier profiles
+- Purchase history
+- Outstanding balances
+- Supplier payments
+- Supplier ledger
+
+---
+
+# 10. Purchase Management
+
+## Features
+- Purchase orders
+- Material purchasing
+- Purchase invoices
+- Supplier tracking
+- Inventory integration
+
+---
+
+# 11. Tax Management
+
+## Features
+- VAT support
+- GST support
+- Custom tax rules
+- Invoice tax breakdown
+- Tax reports
+- Expense tax calculations
+- Sales tax calculations
+
+---
+
+# 12. Production Workflow Board
+
+A Kanban-style production board should be implemented.
+
+## Workflow Stages
+- Received
+- Designing
+- Approval
+- Printing
+- Finishing
+- Packaging
+- Ready
+- Delivered
+
+## Features
+- Drag-and-drop status updates
+- Operator assignment
+- Timestamps
+- Delay tracking
+- Job priority highlighting
+
+---
+
+# 13. Reports & Analytics
+
+## Reports
+- Daily Sales Report
+- Monthly Sales Report
+- Expense Report
+- Profit/Loss Report
+- Customer Ledger
+- Supplier Ledger
+- Tax Report
+- Inventory Report
+- Pending Payments
+- Job Status Report
+
+## Export Options
+- PDF
+- Excel
+- CSV
+
+---
+
+# 14. Notification System
+
+## Notifications
+- New job created
+- Job completed
+- Payment received
+- Low stock alerts
+- Invoice overdue alerts
+- Pending delivery alerts
+
+## Channels
+- In-app notifications
+- Email notifications
+- WhatsApp integration (future phase)
+
+---
+
+# 15. User & Permission Management
+
+## Features
+- Role-based permissions
+- Team separation
+- Department access
+- Branch-based access
+- Activity logs
+- Audit trail
+
+---
+
+# 16. Settings
+
+## Settings Areas
+- Company Information
+- Invoice Templates
+- Tax Configuration
+- Print Configuration
+- Currency Settings
+- Branch Settings
+- Notification Settings
+
+---
+
+# Mobile Responsiveness
+
+The module must be fully responsive across:
+- Desktop
+- Laptop
+- Tablet
+- Mobile devices
+
+## Requirements
+- [DONE] Mobile sidebar support
+- [DONE] Responsive tables
+- [PARTIAL] Touch-friendly UI
+- [DONE] Optimized forms
+- [PARTIAL] Fast loading
+
+---
+
+# UI/UX Requirements
+
+The module must follow the same:
+- Navigation structure
+- Sidebar architecture
+- Mobile navigation
+- Theme system
+- Component design
+- Access control system
+
+used in:
+- Pharmacy Module
+- Shop Module
+- Existing ONEERP modules
+
+---
+
+# Shared Services Integration
+
+The module should reuse existing ONEERP shared services whenever possible.
+
+## Shared Services
+- Authentication
+- Tenant Management
+- Notification Service
+- Tax Engine
+- Invoice Engine
+- File Upload System
+- Audit Logs
+- Permission System
+
+---
+
+# Suggested Database Tables
+
+## Core Tables
+- press_jobs
+- press_job_items
+- press_customers
+- press_quotes
+- press_quote_items
+- press_invoices
+- press_invoice_items
+- press_expenses
+- press_income
+- press_inventory
+- press_stock_movements
+- press_suppliers
+- press_purchases
+- press_purchase_items
+- press_tax_rules
+- press_production_logs
+
+---
+
+# Development Phases
+
+# Phase 1 – MVP
+## Include
+- Dashboard
+- Customers
+- Jobs
+- Quotations
+- Invoices
+- Expenses
+- Income
+
+---
+
+# Phase 2
+## Include
+- Inventory
+- Suppliers
+- Purchases
+- Tax Management
+- Workflow Board
+
+---
+
+# Phase 3
+## Include
+- Machine Management
+- Employee Tracking
+- Advanced Analytics
+- WhatsApp Integration
+- AI Features
+
+---
+
+# Future AI Features
+
+## Planned AI Features
+- Smart quotation estimation
+- Material usage prediction
+- Profit prediction
+- Inventory forecasting
+- OCR invoice scanning
+- AI-powered reporting
+
+---
+
+# Important Development Notes
+
+## Requirements
+- Clean modular architecture
+- Reusable components
+- API-first design
+- Scalable database design
+- Optimized queries
+- Secure role permissions
+- Audit logging
+- Production-ready code quality
+
+---
+# Multi-Language & Localization Requirements
+
+## IMPORTANT
+
+The module must fully support the ONEERP multilingual architecture.
+
+The system currently supports:
+- English
+- Dari
+- Pashto
+
+## Development Requirement
+
+No text, label, message, button, validation message, notification, modal, table header, menu item, form field, tooltip, alert, or UI component should miss translation support.
+
+Every visible text in the module must use the centralized translation/localization system.
+
+---
+
+# Translation Requirements
+
+## The following must support translations:
+- Sidebar menus
+- Navigation items
+- Dashboard widgets
+- Form labels
+- Buttons
+- Validation messages
+- Toast notifications
+- Alerts
+- Modal titles
+- Table headers
+- Report titles
+- Invoice labels
+- Quotation labels
+- Tax labels
+- Workflow statuses
+- Empty state messages
+- Error messages
+- Success messages
+- System notifications
+- Email templates
+- PDF exports
+- Print templates
+
+---
+
+# Technical Requirements
+
+## The module must:
+- Follow the same i18n structure used in existing ONEERP modules
+- Use centralized translation keys
+- Avoid hardcoded text completely
+- Support dynamic language switching
+- Support RTL layouts for Dari and Pashto
+- Maintain responsive layout consistency in all languages
+
+---
+
+# RTL Support
+
+Since Dari and Pashto are RTL languages, the module must properly support:
+- RTL layouts
+- RTL tables
+- RTL forms
+- RTL navigation
+- RTL modals
+- RTL reports
+- RTL invoice/quotation templates
+
+The UI should automatically switch direction based on selected language.
+
+---
+
+# PDF & Print Support
+
+Generated:
+- invoices
+- quotations
+- reports
+- receipts
+
+must properly support:
+- English
+- Dari
+- Pashto
+- RTL rendering
+- Unicode fonts
+
+---
+
+# Development Warning
+
+Missing translations are NOT acceptable.
+
+Before deployment:
+- all UI text must be reviewed
+- all translation keys must be verified
+- all three languages must be tested
+
+The Print & Press Management module must maintain the same multilingual quality standards as the rest of ONEERP.
+
+
+# Final Goal
+
+The Print & Press Management module should become a complete operational ERP solution for printing businesses and integrate seamlessly into the ONEERP ecosystem while maintaining:
+- scalability
+- modularity
+- maintainability
+- responsiveness
+- enterprise-grade architecture

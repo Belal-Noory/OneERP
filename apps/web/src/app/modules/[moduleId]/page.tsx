@@ -9,6 +9,21 @@ import { Reveal } from "@/components/Reveal";
 type PublicModule = { id: string; version: string; name_key: string; description_key: string; category: string; icon: string; is_active: boolean };
 type TutorialCard = { slug: string; title_en: string; title_dr: string; title_ps: string; thumbnail_url: string | null; difficulty: string; language: string; views: number };
 
+const moduleFeatureKeysById: Record<string, string[]> = {
+  printpress: [
+    "public.module.printpress.feature.customers",
+    "public.module.printpress.feature.jobs",
+    "public.module.printpress.feature.quotations",
+    "public.module.printpress.feature.invoices",
+    "public.module.printpress.feature.payments",
+    "public.module.printpress.feature.reports"
+  ]
+};
+
+const moduleScreenshotKeysById: Record<string, string[]> = {
+  printpress: ["public.module.printpress.screenshot.dashboard", "public.module.printpress.screenshot.quotation", "public.module.printpress.screenshot.invoice"]
+};
+
 function joinUrl(base: string, path: string): string {
   if (path.startsWith("http")) return path;
   const b = base.replace(/\/$/, "");
@@ -61,6 +76,8 @@ export default async function PublicModuleDetailPage(props: { params: Promise<{ 
   if (!mod) notFound();
 
   const tutorials = await fetchTutorials(moduleId);
+  const featureKeys = moduleFeatureKeysById[moduleId] ?? [];
+  const screenshotKeys = moduleScreenshotKeysById[moduleId] ?? [];
 
   return (
     <div className="space-y-10">
@@ -73,6 +90,71 @@ export default async function PublicModuleDetailPage(props: { params: Promise<{ 
           </div>
           <h1 className="mt-2 text-3xl font-semibold">{t(mod.name_key)}</h1>
           <p className="mt-3 text-gray-700">{t(mod.description_key)}</p>
+
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            <Link
+              href={`/modules?activate=${encodeURIComponent(moduleId)}`}
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-gray-900 px-4 text-sm font-medium text-white shadow-sm hover:bg-gray-800"
+            >
+              {t("public.modules.modal.cta.requestActivation")}
+            </Link>
+            <Link
+              href="/register"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-gray-900 hover:bg-gray-50"
+            >
+              {t("common.nav.register")}
+            </Link>
+          </div>
+        </section>
+      </Reveal>
+
+      {featureKeys.length > 0 ? (
+        <Reveal>
+          <section className="rounded-2xl border border-gray-200 bg-white p-8 shadow-card">
+            <h2 className="text-xl font-semibold">{t("public.module.featuresTitle")}</h2>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {featureKeys.map((k) => (
+                <div key={k} className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-900">
+                  {t(k)}
+                </div>
+              ))}
+            </div>
+          </section>
+        </Reveal>
+      ) : null}
+
+      {screenshotKeys.length > 0 ? (
+        <Reveal>
+          <section className="rounded-2xl border border-gray-200 bg-white p-8 shadow-card">
+            <h2 className="text-xl font-semibold">{t("public.module.screenshotsTitle")}</h2>
+            <div className="mt-4 grid gap-4 md:grid-cols-3">
+              {screenshotKeys.map((k) => (
+                <div key={k} className="overflow-hidden rounded-2xl border border-gray-200">
+                  <div className="aspect-[4/3] w-full bg-gradient-to-br from-primary-50 via-white to-accent-50" />
+                  <div className="p-4 text-sm font-medium text-gray-900">{t(k)}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </Reveal>
+      ) : null}
+
+      <Reveal>
+        <section className="rounded-2xl border border-gray-200 bg-white p-8 shadow-card">
+          <h2 className="text-xl font-semibold">{t("public.module.pricingTitle")}</h2>
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
+            {[
+              { label: t("common.pricing.online.label"), value: t("common.pricing.online.value") },
+              { label: t("common.pricing.desktopNoChanges.label"), value: t("common.pricing.desktopNoChanges.value") },
+              { label: t("common.pricing.desktopWithChanges.label"), value: t("common.pricing.desktopWithChanges.value") }
+            ].map((x) => (
+              <div key={x.label} className="rounded-2xl border border-gray-200 bg-gray-50 p-6">
+                <div className="text-sm text-gray-700">{x.label}</div>
+                <div className="mt-2 text-xl font-semibold text-gray-900">{x.value}</div>
+                {x.label === t("common.pricing.desktopWithChanges.label") ? <div className="mt-2 text-sm text-gray-700">{t("common.pricing.changesPeriod")}</div> : null}
+              </div>
+            ))}
+          </div>
         </section>
       </Reveal>
 
@@ -129,4 +211,3 @@ export default async function PublicModuleDetailPage(props: { params: Promise<{ 
     </div>
   );
 }
-

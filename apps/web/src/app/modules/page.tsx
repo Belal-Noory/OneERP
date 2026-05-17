@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { getApiBaseUrl } from "@/lib/api";
 import { useClientI18n } from "@/lib/client-i18n";
 import { Modal } from "@/components/Modal";
@@ -27,6 +28,7 @@ type ApiError = { error?: { message_key?: string } };
 
 export default function ModulesPage() {
   const { t } = useClientI18n();
+  const searchParams = useSearchParams();
   const [modules, setModules] = useState<PublicModule[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -41,6 +43,7 @@ export default function ModulesPage() {
   const [activationDone, setActivationDone] = useState(false);
   const [activationNeedsLogin, setActivationNeedsLogin] = useState(false);
   const [activationWorking, setActivationWorking] = useState(false);
+  const [autoActivated, setAutoActivated] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,7 +86,7 @@ export default function ModulesPage() {
 
   const selected = useMemo(() => (selectedId ? modules.find((m) => m.id === selectedId) ?? null : null), [modules, selectedId]);
 
-  const requestActivation = async (moduleId: string) => {
+  const requestActivation = useCallback(async (moduleId: string) => {
     setActivationErrorKey(null);
     setActivationDone(false);
     setActivationNeedsLogin(false);
@@ -124,7 +127,16 @@ export default function ModulesPage() {
     } finally {
       setActivationWorking(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (autoActivated) return;
+    const requestedId = (searchParams.get("activate") ?? "").trim();
+    if (!requestedId) return;
+    if (!modules.some((m) => m.id === requestedId)) return;
+    setAutoActivated(true);
+    void requestActivation(requestedId);
+  }, [autoActivated, modules, requestActivation, searchParams]);
 
   return (
     <div className="space-y-10">

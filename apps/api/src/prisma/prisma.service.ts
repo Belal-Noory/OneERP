@@ -6,7 +6,14 @@ import { PrismaClient } from "@prisma/client";
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     await this.$connect();
-    await this.ensureLearningCenterSeeded();
+    try {
+      await this.ensureLearningCenterSeeded();
+    } catch (err: unknown) {
+      const e = err as { code?: unknown; meta?: unknown; message?: unknown };
+      const code = typeof e?.code === "string" ? e.code : null;
+      if (code === "P2021" || code === "P2022") return;
+      throw err;
+    }
   }
 
   async onModuleDestroy() {

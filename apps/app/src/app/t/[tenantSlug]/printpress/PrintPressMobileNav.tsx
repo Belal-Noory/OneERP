@@ -7,7 +7,7 @@ import { Modal } from "@/components/Modal";
 import { useClientI18n } from "@/lib/client-i18n";
 
 type NavItem =
-  | { key: "dashboard" | "jobs" | "customers"; href: string; label: string; icon: ReactNode }
+  | { key: "dashboard" | "jobs" | "customers" | "invoices"; href: string; label: string; icon: ReactNode }
   | { key: "more"; label: string; icon: ReactNode };
 
 export function PrintPressMobileNav(props: { tenantSlug: string }) {
@@ -19,7 +19,9 @@ export function PrintPressMobileNav(props: { tenantSlug: string }) {
 
   const hidden = useMemo(() => {
     if (!pathname) return false;
-    return pathname.includes("/print");
+    const clean = pathname.split("?")[0].split("#")[0];
+    const segments = clean.split("/").filter(Boolean);
+    return segments.includes("print");
   }, [pathname]);
 
   const items: NavItem[] = useMemo(
@@ -27,6 +29,7 @@ export function PrintPressMobileNav(props: { tenantSlug: string }) {
       { key: "dashboard", href: `${base}`, label: t("app.printpress.tab.dashboard"), icon: <IconDashboard /> },
       { key: "jobs", href: `${base}/jobs`, label: t("app.printpress.tab.jobs"), icon: <IconJobs /> },
       { key: "customers", href: `${base}/customers`, label: t("app.printpress.tab.customers"), icon: <IconUsers /> },
+      { key: "invoices", href: `${base}/invoices`, label: t("app.printpress.tab.invoices"), icon: <IconInvoice /> },
       { key: "more", label: t("app.printpress.mobile.more"), icon: <IconMore /> }
     ],
     [base, t]
@@ -37,6 +40,7 @@ export function PrintPressMobileNav(props: { tenantSlug: string }) {
     if (pathname === base) return "dashboard";
     if (pathname.startsWith(`${base}/jobs`)) return "jobs";
     if (pathname.startsWith(`${base}/customers`)) return "customers";
+    if (pathname.startsWith(`${base}/invoices`)) return "invoices";
     return "more";
   }, [base, pathname]);
 
@@ -87,6 +91,9 @@ export function PrintPressMobileNav(props: { tenantSlug: string }) {
               { href: `${base}/jobs`, label: t("app.printpress.tab.jobs") },
               { href: `${base}/customers`, label: t("app.printpress.tab.customers") },
               { href: `${base}/quotations`, label: t("app.printpress.tab.quotations") },
+              { href: `${base}/invoices`, label: t("app.printpress.tab.invoices") },
+              { href: `${base}/income`, label: t("app.printpress.tab.income") },
+              { href: `${base}/expenses`, label: t("app.printpress.tab.expenses") },
               { href: `${base}/reports`, label: t("app.printpress.tab.reports") },
               { href: `${base}/settings`, label: t("app.printpress.tab.settings") }
             ].map((l) => (
@@ -144,3 +151,12 @@ function IconMore() {
   );
 }
 
+function IconInvoice() {
+  return (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M7 3h10v18l-2-1-3 1-3-1-2 1V3Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M9 8h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M9 12h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}

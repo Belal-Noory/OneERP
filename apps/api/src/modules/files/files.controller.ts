@@ -48,7 +48,14 @@ export class FilesController {
     }
 
     const purpose = req.query?.purpose?.trim() || "tenant_logo";
-    if (purpose !== "tenant_logo" && purpose !== "shop_product_image" && purpose !== "msp_customer_kyc_document") {
+    if (
+      purpose !== "tenant_logo" &&
+      purpose !== "printpress_logo" &&
+      purpose !== "printpress_customer_attachment" &&
+      purpose !== "printpress_expense_attachment" &&
+      purpose !== "shop_product_image" &&
+      purpose !== "msp_customer_kyc_document"
+    ) {
       throw new HttpException({ error: { code: "VALIDATION_ERROR", message_key: "errors.validationError" } }, 400);
     }
 

@@ -11,7 +11,9 @@ export function FullscreenToggle(props: { className?: string }) {
   const enabled = useMemo(() => {
     if (!pathname) return false;
     if (!pathname.startsWith("/t/")) return false;
-    if (pathname.includes("/print")) return false;
+    const clean = pathname.split("?")[0].split("#")[0];
+    const segments = clean.split("/").filter(Boolean);
+    if (segments.includes("print")) return false;
     return true;
   }, [pathname]);
 

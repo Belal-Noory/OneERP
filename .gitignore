@@ -5,3 +5,6 @@ dist
 .env
 apps/*/.env
 apps/api/storage
+apps/api/apps/api/storage
+*.tsbuildinfo
+ONEERP.png

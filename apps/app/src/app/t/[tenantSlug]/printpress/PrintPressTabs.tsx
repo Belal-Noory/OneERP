@@ -15,6 +15,9 @@ export function PrintPressTabs(props: { tenantSlug: string }) {
     { label: t("app.printpress.tab.jobs"), href: `${base}/jobs` },
     { label: t("app.printpress.tab.customers"), href: `${base}/customers` },
     { label: t("app.printpress.tab.quotations"), href: `${base}/quotations` },
+    { label: t("app.printpress.tab.invoices"), href: `${base}/invoices` },
+    { label: t("app.printpress.tab.income"), href: `${base}/income` },
+    { label: t("app.printpress.tab.expenses"), href: `${base}/expenses` },
     { label: t("app.printpress.tab.reports"), href: `${base}/reports` },
     { label: t("app.printpress.tab.settings"), href: `${base}/settings` }
   ];
@@ -38,4 +41,3 @@ export function PrintPressTabs(props: { tenantSlug: string }) {
     </div>
   );
 }
-

@@ -168,6 +168,21 @@ model Tenant {
   fuelReceivings          FuelReceiving[]
   fuelTankDips            FuelTankDip[]
   fuelPrices              FuelPrice[]
+
+  printPressCustomers       PrintPressCustomer[]
+  printPressJobs            PrintPressJob[]
+  printPressQuotations      PrintPressQuotation[]
+  printPressQuotationLines  PrintPressQuotationLine[]
+  printPressInvoices        PrintPressInvoice[]
+  printPressInvoiceLines    PrintPressInvoiceLine[]
+  printPressInvoicePayments PrintPressInvoicePayment[]
+  printPressExpenses        PrintPressExpense[]
+  printPressIncome          PrintPressIncome[]
+  printPressSettings        PrintPressSettings?
+  printPressCustomerAttachments PrintPressCustomerAttachment[]
+  printPressExpenseAttachments  PrintPressExpenseAttachment[]
+  printPressRecurringExpenses  PrintPressRecurringExpense[]
+  printPressSuppliers          PrintPressSupplier[]
 }
 
 model FuelPrice {
@@ -431,6 +446,9 @@ model File {
   tenant                   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   usedAsLogoBy             TenantBranding? @relation("TenantLogoFile")
   usedAsShopProductImageBy ShopProduct[]   @relation("ShopProductImageFile")
+  usedAsPrintPressLogoBy   PrintPressSettings? @relation("PrintPressLogoFile")
+  printPressCustomerAttachments PrintPressCustomerAttachment[]
+  printPressExpenseAttachments  PrintPressExpenseAttachment[]
 
   @@index([tenantId, purpose])
 }
@@ -599,6 +617,334 @@ model TutorialRelation {
 
   @@unique([tutorialId, relatedTutorialId])
   @@index([tutorialId, orderNo])
+}
+
+enum PrintPressJobStatus {
+  received
+  designing
+  customer_approval
+  printing
+  finishing
+  packaging
+  ready
+  delivered
+  cancelled
+}
+
+enum PrintPressJobPriority {
+  low
+  normal
+  high
+  urgent
+}
+
+enum PrintPressQuotationStatus {
+  draft
+  issued
+  void
+}
+
+enum PrintPressInvoiceStatus {
+  draft
+  issued
+  paid
+  void
+}
+
+enum PrintPressCustomerType {
+  individual
+  business
+}
+
+enum PrintPressRecurrenceInterval {
+  weekly
+  monthly
+  yearly
+}
+
+model PrintPressCustomer {
+  id          String   @id @default(uuid())
+  tenantId    String
+  moduleId    String   @default("printpress")
+  fullName    String
+  companyName String?
+  customerType PrintPressCustomerType?
+  phone       String?
+  email       String?
+  address     String?
+  taxNumber   String?
+  notes       String?
+  isActive    Boolean  @default(true)
+  deletedAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant     Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  attachments PrintPressCustomerAttachment[]
+  jobs       PrintPressJob[]
+  quotations PrintPressQuotation[]
+  invoices   PrintPressInvoice[]
+
+  @@index([tenantId, moduleId, deletedAt])
+  @@index([tenantId, moduleId, fullName])
+  @@index([tenantId, moduleId, phone])
+}
+
+model PrintPressCustomerAttachment {
+  id         String   @id @default(uuid())
+  tenantId   String
+  customerId String
+  fileId     String
+  createdAt  DateTime @default(now())
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer PrintPressCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  file     File             @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, customerId, fileId])
+  @@index([tenantId, customerId, createdAt(sort: Desc)])
+}
+
+model PrintPressJob {
+  id           String               @id @default(uuid())
+  tenantId     String
+  moduleId     String               @default("printpress")
+  jobNumber    String?
+  status       PrintPressJobStatus  @default(received)
+  priority     PrintPressJobPriority @default(normal)
+  customerId   String?
+  title        String?
+  description  String?
+  orderDate    DateTime             @default(now())
+  deliveryDate DateTime?
+  estimatedCost Decimal             @default(0) @db.Decimal(14, 2)
+  sellingPrice Decimal              @default(0) @db.Decimal(14, 2)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  tenant   Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer PrintPressCustomer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, jobNumber])
+  @@index([tenantId, moduleId, status, priority])
+  @@index([tenantId, moduleId, createdAt(sort: Desc)])
+  @@index([tenantId, customerId, createdAt(sort: Desc)])
+}
+
+model PrintPressQuotation {
+  id              String                @id @default(uuid())
+  tenantId        String
+  moduleId        String                @default("printpress")
+  status          PrintPressQuotationStatus @default(draft)
+  quotationNumber String?
+  customerId      String?
+  currencyCode    String                @default("USD")
+  subtotal        Decimal               @default(0) @db.Decimal(14, 2)
+  discount        Decimal               @default(0) @db.Decimal(14, 2)
+  tax             Decimal               @default(0) @db.Decimal(14, 2)
+  total           Decimal               @default(0) @db.Decimal(14, 2)
+  notes           String?
+  issuedAt        DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  tenant   Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer PrintPressCustomer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  lines    PrintPressQuotationLine[]
+  invoices PrintPressInvoice[]
+
+  @@unique([tenantId, quotationNumber])
+  @@index([tenantId, moduleId, status])
+  @@index([tenantId, customerId, createdAt(sort: Desc)])
+}
+
+model PrintPressQuotationLine {
+  id          String  @id @default(uuid())
+  tenantId    String
+  quotationId String
+  description String
+  quantity    Decimal @db.Decimal(14, 3)
+  unitPrice   Decimal @db.Decimal(14, 2)
+  lineTotal   Decimal @db.Decimal(14, 2)
+
+  tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  quotation PrintPressQuotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, quotationId])
+}
+
+model PrintPressInvoice {
+  id            String              @id @default(uuid())
+  tenantId      String
+  moduleId      String              @default("printpress")
+  status        PrintPressInvoiceStatus @default(draft)
+  invoiceNumber String?
+  quotationId   String?
+  customerId    String?
+  currencyCode  String              @default("USD")
+  subtotal      Decimal             @default(0) @db.Decimal(14, 2)
+  discount      Decimal             @default(0) @db.Decimal(14, 2)
+  tax           Decimal             @default(0) @db.Decimal(14, 2)
+  total         Decimal             @default(0) @db.Decimal(14, 2)
+  paidTotal     Decimal             @default(0) @db.Decimal(14, 2)
+  notes         String?
+  issuedAt      DateTime?
+  dueAt         DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  tenant    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  quotation PrintPressQuotation? @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+  customer  PrintPressCustomer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  lines     PrintPressInvoiceLine[]
+  payments  PrintPressInvoicePayment[]
+
+  @@unique([tenantId, invoiceNumber])
+  @@index([tenantId, moduleId, status])
+  @@index([tenantId, customerId, createdAt(sort: Desc)])
+}
+
+model PrintPressInvoiceLine {
+  id          String  @id @default(uuid())
+  tenantId    String
+  invoiceId   String
+  description String
+  quantity    Decimal @db.Decimal(14, 3)
+  unitPrice   Decimal @db.Decimal(14, 2)
+  lineTotal   Decimal @db.Decimal(14, 2)
+
+  tenant  Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice PrintPressInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, invoiceId])
+}
+
+model PrintPressInvoicePayment {
+  id        String   @id @default(uuid())
+  tenantId  String
+  invoiceId String
+  method    String
+  amount    Decimal  @db.Decimal(14, 2)
+  note      String?
+  createdAt DateTime @default(now())
+
+  tenant  Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice PrintPressInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, invoiceId, createdAt(sort: Desc)])
+}
+
+model PrintPressExpense {
+  id          String   @id @default(uuid())
+  tenantId    String
+  moduleId    String   @default("printpress")
+  expenseDate DateTime @default(now())
+  supplierId  String?
+  category    String
+  description String?
+  amount      Decimal  @db.Decimal(14, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier PrintPressSupplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  attachments PrintPressExpenseAttachment[]
+
+  @@index([tenantId, moduleId, expenseDate(sort: Desc)])
+  @@index([tenantId, supplierId, expenseDate(sort: Desc)])
+}
+
+model PrintPressExpenseAttachment {
+  id        String   @id @default(uuid())
+  tenantId  String
+  expenseId String
+  fileId    String
+  createdAt DateTime @default(now())
+
+  tenant  Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  expense PrintPressExpense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  file    File            @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, expenseId, fileId])
+  @@index([tenantId, expenseId, createdAt(sort: Desc)])
+}
+
+model PrintPressRecurringExpense {
+  id          String   @id @default(uuid())
+  tenantId    String
+  moduleId    String   @default("printpress")
+  isActive    Boolean  @default(true)
+  nextRunAt   DateTime
+  interval    PrintPressRecurrenceInterval
+  supplierId  String?
+  category    String
+  description String?
+  amount      Decimal  @db.Decimal(14, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier PrintPressSupplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, moduleId, isActive, nextRunAt])
+  @@index([tenantId, moduleId, createdAt(sort: Desc)])
+}
+
+model PrintPressSupplier {
+  id          String   @id @default(uuid())
+  tenantId    String
+  moduleId    String   @default("printpress")
+  name        String
+  phone       String?
+  email       String?
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant             Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  printPressExpenses PrintPressExpense[]
+  recurringExpenses PrintPressRecurringExpense[]
+
+  @@unique([tenantId, moduleId, name])
+  @@index([tenantId, moduleId, createdAt(sort: Desc)])
+}
+
+model PrintPressIncome {
+  id         String   @id @default(uuid())
+  tenantId   String
+  moduleId   String   @default("printpress")
+  incomeDate DateTime @default(now())
+  category   String
+  description String?
+  amount     Decimal  @db.Decimal(14, 2)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, moduleId, incomeDate(sort: Desc)])
+}
+
+model PrintPressSettings {
+  tenantId             String   @id
+  moduleId             String   @default("printpress")
+  businessName         String?
+  logoFileId           String?  @unique
+  phone                String?
+  address              String?
+  email                String?
+  taxNumber            String?
+  defaultCurrencyCode  String   @default("USD")
+  nextJobNumber        Int      @default(1)
+  nextQuotationNumber  Int      @default(1)
+  nextInvoiceNumber    Int      @default(1)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  logo   File?  @relation("PrintPressLogoFile", fields: [logoFileId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, moduleId])
 }
 
 model MspSettings {
