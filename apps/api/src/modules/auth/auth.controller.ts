@@ -24,13 +24,21 @@ function parseDurationMs(raw: string | undefined, fallbackMs: number): number {
   return fallbackMs;
 }
 
+function getCookieDomain(): string | undefined {
+  const raw = (process.env.COOKIE_DOMAIN ?? "").trim();
+  if (!raw) return undefined;
+  return raw;
+}
+
 function setAuthCookies(res: Response, accessToken: string, refreshToken: string, accessMaxAgeMs: number) {
   const isProd = process.env.NODE_ENV === "production";
+  const domain = isProd ? getCookieDomain() : undefined;
   res.cookie(ACCESS_COOKIE, accessToken, {
     httpOnly: true,
     sameSite: "lax",
     secure: isProd,
     path: "/",
+    ...(domain ? { domain } : {}),
     maxAge: accessMaxAgeMs
   });
   const refreshMaxAgeMs = parseDurationMs(process.env.TOKEN_TTL_REFRESH, 30 * 24 * 60 * 60 * 1000);
@@ -39,6 +47,7 @@ function setAuthCookies(res: Response, accessToken: string, refreshToken: string
     sameSite: "lax",
     secure: isProd,
     path: "/",
+    ...(domain ? { domain } : {}),
     maxAge: refreshMaxAgeMs
   });
 }
@@ -70,8 +79,10 @@ export class AuthController {
       throw new HttpException({ error: { code: "UNAUTHENTICATED", message_key: "errors.unauthenticated" } }, 401);
     }
     const result = await this.auth.logout(refreshToken);
-    res.clearCookie(ACCESS_COOKIE, { path: "/" });
-    res.clearCookie(REFRESH_COOKIE, { path: "/" });
+    const isProd = process.env.NODE_ENV === "production";
+    const domain = isProd ? getCookieDomain() : undefined;
+    res.clearCookie(ACCESS_COOKIE, { path: "/", ...(domain ? { domain } : {}) });
+    res.clearCookie(REFRESH_COOKIE, { path: "/", ...(domain ? { domain } : {}) });
     return result;
   }
 
