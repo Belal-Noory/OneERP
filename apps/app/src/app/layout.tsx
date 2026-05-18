@@ -1,8 +1,13 @@
 import "./globals.css";
+import type { Metadata } from "next";
 import { getRequestLocale } from "@/lib/locale";
 import { getTextDirection } from "@oneerp/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { FullscreenToggle } from "@/components/FullscreenToggle";
+
+export const metadata: Metadata = {
+  title: { default: "OneERP — Tenant Dashboard", template: "%s — OneERP" }
+};
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const locale = await getRequestLocale();

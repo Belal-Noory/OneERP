@@ -40,7 +40,7 @@ type Message = {
 
 type MessagesResponse = { data?: { messages?: Message[] }; error?: { message_key?: string } };
 type UploadAttachmentResponse = { data?: { attachment?: Attachment }; error?: { message_key?: string } };
-type SendMessageResponse = { data?: { message?: Message; ticket?: unknown }; error?: { message_key?: string } };
+type SendMessageResponse = { data?: { message?: Message; ticket?: Partial<Ticket> & { id: string } }; error?: { message_key?: string } };
 
 function formatSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
@@ -171,6 +171,20 @@ export function OwnerSupportClient() {
 
   const selectedTicket = useMemo(() => tickets.find((x) => x.id === selectedTicketId) ?? null, [tickets, selectedTicketId]);
 
+  const applyTicketPatch = useCallback((patch: Partial<Ticket> & { id: string }) => {
+    setTickets((prev) => {
+      const next = prev.map((t) => (t.id === patch.id ? { ...t, ...patch } : t));
+      return next;
+    });
+  }, []);
+
+  const appendMessage = useCallback((m: Message) => {
+    setMessages((prev) => {
+      if (prev.some((x) => x.id === m.id)) return prev;
+      return [...prev, m];
+    });
+  }, []);
+
   const loadTickets = useCallback(async () => {
     const qs = new URLSearchParams();
     if (statusFilter !== "all") qs.set("status", statusFilter);
@@ -241,9 +255,15 @@ export function OwnerSupportClient() {
     socketRef.current = socket;
 
     const onTicketUpdate = () => void loadTickets();
-    const onMessageCreated = (payload: { ticketId?: string }) => {
-      void loadTickets();
-      if (payload?.ticketId && payload.ticketId === selectedTicketId) void loadMessages(payload.ticketId);
+    const onMessageCreated = (payload: { ticketId?: string; message?: Message; ticket?: Partial<Ticket> & { id: string } }) => {
+      if (payload?.ticket) applyTicketPatch(payload.ticket);
+      if (!payload?.ticketId) return;
+      if (payload.ticketId !== selectedTicketId) return;
+      if (payload.message) {
+        appendMessage(payload.message);
+        return;
+      }
+      void loadMessages(payload.ticketId);
     };
     const onTyping = (payload: { ticketId?: string; sender?: string; isTyping?: boolean }) => {
       if (payload?.ticketId !== selectedTicketId) return;
@@ -270,7 +290,7 @@ export function OwnerSupportClient() {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [loadTickets, loadMessages, selectedTicketId]);
+  }, [loadTickets, loadMessages, selectedTicketId, applyTicketPatch, appendMessage]);
 
   useEffect(() => {
     if (!selectedTicketId) return;
@@ -340,16 +360,18 @@ export function OwnerSupportClient() {
         setErrorKey(json.error?.message_key ?? "errors.internal");
         return;
       }
+      const createdMessage = json.data?.message ?? null;
+      const updatedTicket = json.data?.ticket ?? null;
       setComposeText("");
       setPendingAttachments([]);
-      await loadMessages(selectedTicketId);
-      await loadTickets();
+      if (updatedTicket) applyTicketPatch(updatedTicket);
+      if (createdMessage) appendMessage(createdMessage);
     } catch {
       setErrorKey("errors.internal");
     } finally {
       setSending(false);
     }
-  }, [selectedTicketId, composeText, pendingAttachments, loadMessages, loadTickets, t]);
+  }, [selectedTicketId, composeText, pendingAttachments, t, applyTicketPatch, appendMessage]);
 
   const onTypingLocal = useCallback(
     (next: string) => {

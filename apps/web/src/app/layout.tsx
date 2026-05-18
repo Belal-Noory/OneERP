@@ -8,8 +8,8 @@ import { IconWhatsApp } from "@/components/Graphics";
 import { Inter, Noto_Sans_Arabic } from "next/font/google";
 
 export const metadata: Metadata = {
-  title: "OneERP",
-  description: "Modular SaaS ERP platform"
+  title: { default: "OneERP", template: "%s — OneERP" },
+  description: "OneERP is a modular SaaS ERP platform for growing businesses."
 };
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });

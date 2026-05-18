@@ -10,6 +10,30 @@ type AuthedSocket = Socket & {
   };
 };
 
+type RealtimeAttachment = { id: string; originalName: string; contentType: string; sizeBytes: number; createdAt: Date };
+type RealtimeMessage = {
+  id: string;
+  senderType: "tenant" | "owner";
+  senderUserId: string;
+  message: string;
+  createdAt: Date;
+  seenByTenantAt: Date | null;
+  seenByOwnerAt: Date | null;
+  attachments: RealtimeAttachment[];
+};
+
+type RealtimeTicketPatch = {
+  id: string;
+  status: string;
+  priority: string;
+  updatedAt: Date;
+  lastMessageAt: Date | null;
+  lastMessageText: string | null;
+  lastSenderType: string | null;
+  unreadForOwner: number;
+  unreadForTenant: number;
+};
+
 function parseCookieHeader(header: string | undefined): Record<string, string> {
   if (!header) return {};
   const out: Record<string, string> = {};
@@ -160,7 +184,7 @@ export class SupportCenterGateway {
     this.server.to(`ticket:${args.ticketId}`).emit("support:ticketUpdated", args);
   }
 
-  emitMessageCreated(args: { tenantId: string; ticketId: string; messageId: string }) {
+  emitMessageCreated(args: { tenantId: string; ticketId: string; messageId: string; message?: RealtimeMessage; ticket?: RealtimeTicketPatch }) {
     this.server.to("owner:admins").emit("support:messageCreated", args);
     this.server.to(`tenant:${args.tenantId}`).emit("support:messageCreated", args);
     this.server.to(`ticket:${args.ticketId}`).emit("support:messageCreated", args);

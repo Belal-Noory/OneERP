@@ -41,7 +41,7 @@ type Message = {
 type MessagesResponse = { data?: { messages?: Message[] }; error?: { message_key?: string } };
 type CreateTicketResponse = { data?: { ticket?: { id: string } }; error?: { message_key?: string } };
 type UploadAttachmentResponse = { data?: { attachment?: Attachment }; error?: { message_key?: string } };
-type SendMessageResponse = { data?: { message?: Message; ticket?: unknown }; error?: { message_key?: string } };
+type SendMessageResponse = { data?: { message?: Message; ticket?: Partial<Ticket> & { id: string } }; error?: { message_key?: string } };
 
 function formatSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
@@ -177,6 +177,20 @@ export function SupportCenterClient(props: { tenantSlug: string }) {
 
   const selectedTicket = useMemo(() => tickets.find((x) => x.id === selectedTicketId) ?? null, [tickets, selectedTicketId]);
 
+  const applyTicketPatch = useCallback((patch: Partial<Ticket> & { id: string }) => {
+    setTickets((prev) => {
+      const next = prev.map((t) => (t.id === patch.id ? { ...t, ...patch } : t));
+      return next;
+    });
+  }, []);
+
+  const appendMessage = useCallback((m: Message) => {
+    setMessages((prev) => {
+      if (prev.some((x) => x.id === m.id)) return prev;
+      return [...prev, m];
+    });
+  }, []);
+
   const loadTickets = useCallback(async () => {
     if (!tenantId) return;
     const qs = new URLSearchParams();
@@ -266,9 +280,15 @@ export function SupportCenterClient(props: { tenantSlug: string }) {
     socketRef.current = socket;
 
     const onTicketUpdate = () => void loadTickets();
-    const onMessageCreated = (payload: { ticketId?: string }) => {
-      void loadTickets();
-      if (payload?.ticketId && payload.ticketId === selectedTicketId) void loadMessages(payload.ticketId);
+    const onMessageCreated = (payload: { ticketId?: string; message?: Message; ticket?: Partial<Ticket> & { id: string } }) => {
+      if (payload?.ticket) applyTicketPatch(payload.ticket);
+      if (!payload?.ticketId) return;
+      if (payload.ticketId !== selectedTicketId) return;
+      if (payload.message) {
+        appendMessage(payload.message);
+        return;
+      }
+      void loadMessages(payload.ticketId);
     };
     const onTyping = (payload: { ticketId?: string; sender?: string; isTyping?: boolean }) => {
       if (payload?.ticketId !== selectedTicketId) return;
@@ -295,7 +315,7 @@ export function SupportCenterClient(props: { tenantSlug: string }) {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [tenantId, loadTickets, loadMessages, selectedTicketId]);
+  }, [tenantId, loadTickets, loadMessages, selectedTicketId, appendMessage, applyTicketPatch]);
 
   useEffect(() => {
     const ticketIdFromQuery = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("ticketId") : null;
@@ -377,16 +397,18 @@ export function SupportCenterClient(props: { tenantSlug: string }) {
         setErrorKey(json.error?.message_key ?? "errors.internal");
         return;
       }
+      const createdMessage = json.data?.message ?? null;
+      const updatedTicket = json.data?.ticket ?? null;
       setComposeText("");
       setPendingAttachments([]);
-      await loadMessages(selectedTicketId);
-      await loadTickets();
+      if (updatedTicket) applyTicketPatch(updatedTicket);
+      if (createdMessage) appendMessage(createdMessage);
     } catch {
       setErrorKey("errors.internal");
     } finally {
       setSending(false);
     }
-  }, [tenantId, selectedTicketId, composeText, pendingAttachments, loadMessages, loadTickets, t]);
+  }, [tenantId, selectedTicketId, composeText, pendingAttachments, t, applyTicketPatch, appendMessage]);
 
   const onTypingLocal = useCallback(
     (next: string) => {

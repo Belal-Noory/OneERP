@@ -357,6 +357,11 @@ export class SupportCenterService {
         });
       }
 
+      const attachments = await tx.supportAttachment.findMany({
+        where: { messageId: createdMessage.id },
+        select: { id: true, originalName: true, contentType: true, sizeBytes: true, createdAt: true }
+      });
+
       const updatedTicket = await tx.supportTicket.update({
         where: { id: args.ticketId },
         data: {
@@ -365,10 +370,20 @@ export class SupportCenterService {
           lastSenderType: "tenant",
           unreadForOwner: { increment: 1 }
         },
-        select: { id: true, unreadForOwner: true, unreadForTenant: true, status: true, priority: true, updatedAt: true }
+        select: {
+          id: true,
+          status: true,
+          priority: true,
+          updatedAt: true,
+          lastMessageAt: true,
+          lastMessageText: true,
+          lastSenderType: true,
+          unreadForOwner: true,
+          unreadForTenant: true
+        }
       });
 
-      return { message: createdMessage, ticket: updatedTicket };
+      return { message: { ...createdMessage, attachments }, ticket: updatedTicket };
     });
 
     await this.notifyOwnerEmail({
@@ -380,8 +395,13 @@ export class SupportCenterService {
       preview: msg
     });
 
-    this.gateway.emitMessageCreated({ tenantId: args.tenantId, ticketId: ticket.id, messageId: created.message.id });
-    this.gateway.emitTicketUpdated({ tenantId: args.tenantId, ticketId: ticket.id });
+    this.gateway.emitMessageCreated({
+      tenantId: args.tenantId,
+      ticketId: ticket.id,
+      messageId: created.message.id,
+      message: created.message,
+      ticket: created.ticket
+    });
     return created;
   }
 
@@ -611,6 +631,11 @@ export class SupportCenterService {
         });
       }
 
+      const attachments = await tx.supportAttachment.findMany({
+        where: { messageId: createdMessage.id },
+        select: { id: true, originalName: true, contentType: true, sizeBytes: true, createdAt: true }
+      });
+
       const updatedTicket = await tx.supportTicket.update({
         where: { id: args.ticketId },
         data: {
@@ -619,14 +644,29 @@ export class SupportCenterService {
           lastSenderType: "owner",
           unreadForTenant: { increment: 1 }
         },
-        select: { id: true, unreadForOwner: true, unreadForTenant: true, status: true, priority: true, updatedAt: true }
+        select: {
+          id: true,
+          status: true,
+          priority: true,
+          updatedAt: true,
+          lastMessageAt: true,
+          lastMessageText: true,
+          lastSenderType: true,
+          unreadForOwner: true,
+          unreadForTenant: true
+        }
       });
 
-      return { message: createdMessage, ticket: updatedTicket };
+      return { message: { ...createdMessage, attachments }, ticket: updatedTicket };
     });
 
-    this.gateway.emitMessageCreated({ tenantId: ticket.tenantId, ticketId: ticket.id, messageId: created.message.id });
-    this.gateway.emitTicketUpdated({ tenantId: ticket.tenantId, ticketId: ticket.id });
+    this.gateway.emitMessageCreated({
+      tenantId: ticket.tenantId,
+      ticketId: ticket.id,
+      messageId: created.message.id,
+      message: created.message,
+      ticket: created.ticket
+    });
     return created;
   }
 

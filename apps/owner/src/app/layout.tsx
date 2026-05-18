@@ -1,6 +1,11 @@
 import "./globals.css";
+import type { Metadata } from "next";
 import { getRequestLocale } from "@/lib/locale";
 import { getTextDirection } from "@oneerp/i18n";
+
+export const metadata: Metadata = {
+  title: { default: "OneERP — Owner Portal", template: "%s — OneERP" }
+};
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const locale = await getRequestLocale();
