@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { useClientI18n } from "@/lib/client-i18n";
 import { Modal } from "@/components/Modal";
 import { Reveal } from "@/components/Reveal";
@@ -26,8 +27,15 @@ function useHomeVideoExperimentEnabled(): boolean {
   return enabled;
 }
 
-const loopSources = [{ src: "/videos/oneerp-introduction-loop.mp4", type: "video/mp4" }];
-const fullSources = [{ src: "/videos/oneerp-introduction.mp4", type: "video/mp4" }];
+const loopSources = [
+  { src: "/videos/oneerp-hero-loop.webm", type: "video/webm" },
+  { src: "/videos/oneerp-hero-loop.mp4", type: "video/mp4" }
+];
+
+const fullSources = [
+  { src: "/videos/oneerp-introduction.webm", type: "video/webm" },
+  { src: "/videos/oneerp-introduction.mp4", type: "video/mp4" }
+];
 
 export function HomeHeroMedia() {
   const { t } = useClientI18n();
@@ -41,8 +49,14 @@ export function HomeHeroMedia() {
         subtitle={t("public.home.video.modal.subtitle")}
         closeLabel={t("common.button.close")}
         poster={
-          <div className="mkt-float h-full w-full bg-white">
-            <HeroGraphic />
+          <div className="relative h-full w-full bg-white">
+            <Image src="/videos/oneerp-hero-poster.jpg" alt="" fill priority className="object-cover" sizes="(min-width: 768px) 560px, 100vw" />
+            <div className="absolute inset-0 bg-gradient-to-br from-primary-50/50 via-white/30 to-accent-50/50" />
+            <div className="absolute inset-0 opacity-0 md:opacity-100">
+              <div className="mkt-float h-full w-full">
+                <HeroGraphic />
+              </div>
+            </div>
           </div>
         }
         loopSources={loopSources}
